@@ -309,17 +309,24 @@ results_summary = pd.DataFrame(columns=[
     'Total Articles Retrieved'
 ])
 
+from tqdm import tqdm
 # Loop through the list of models
-for model_name in models:
+for model_name in tqdm(models):
     print(f"Testing model: {model_name}")
     # Create an instance of the LLM with the current model
+
     ollama_llm = ChatOllama(
         base_url=os.getenv('OLLAMA_API_URL'),
         model=model_name,
         temperature=0.0,
-        client_kwargs={'headers': headers},
-        format="json"
-    )
+        seed=28,
+        num_ctx=25000,
+        num_predict=-1,
+        top_k=100,
+        top_p=0.95,
+        format="json",
+        # stop=["\n}"],
+        client_kwargs={'headers': headers})
 
     # Create an instance of the UnifiedLiteratureSearcher
     searcher = UnifiedLiteratureSearcher(

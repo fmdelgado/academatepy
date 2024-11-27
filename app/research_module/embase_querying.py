@@ -127,25 +127,24 @@ class EmbaseQueryGenerator:
         Generates an Embase advanced search query using the LLM.
         """
         prompt = f"""Generate a comprehensive Embase advanced search query for the following topic:
+        {topic}
+        Guidelines:
+        1. Use field codes like TITLE(), ABS(), KEY(), TITLE-ABS-KEY() without quotes or colons.
+        2. Use boolean operators (AND, OR, NOT) to create effective query structures.
+        3. Include relevant synonyms and related terms.
+        4. Balance specificity and sensitivity.
+        5. Do not include any additional text, explanations, or notes.
+        6. Provide ONLY the query, formatted correctly for Embase advanced search.
+        7. Do not include any special characters like colons (:), quotation marks (") around field codes.
+        8. Do not include JSON or key-value pairs.
+    
+        Your response should be the Embase query, in this format:
+    
+        (TITLE-ABS-KEY(term1 OR "term1 synonym") AND TITLE-ABS-KEY(term2 OR "term2 synonym"))
+    
+        Ensure that the query is syntactically correct for Embase advanced search.
+        """
 
-    {topic}
-
-    Guidelines:
-    1. Use field codes like TITLE(), ABS(), KEY(), TITLE-ABS-KEY() without quotes or colons.
-    2. Use boolean operators (AND, OR, NOT) to create effective query structures.
-    3. Include relevant synonyms and related terms.
-    4. Balance specificity and sensitivity.
-    5. Do not include any additional text, explanations, or notes.
-    6. Provide ONLY the query, formatted correctly for Embase advanced search.
-    7. Do not include any special characters like colons (:), quotation marks (") around field codes.
-    8. Do not include JSON or key-value pairs.
-
-    Your response should be the Embase query, in this format:
-
-    (TITLE-ABS-KEY(term1 OR "term1 synonym") AND TITLE-ABS-KEY(term2 OR "term2 synonym"))
-
-    Ensure that the query is syntactically correct for Embase advanced search.
-    """
         response = self.llm.invoke(prompt)
         query = self.extract_content(response)
         query = self.clean_query(query)
@@ -204,8 +203,8 @@ class EmbaseQueryGenerator:
         except Exception as e:
             self.logger.error(f"Error extracting content from response: {e}")
             return ""
-
-
+#
+#
 from langchain_ollama.chat_models import ChatOllama
 import os
 from dotenv import load_dotenv
@@ -238,7 +237,7 @@ topic = "The role of artificial intelligence in drug discovery"
 known_pmids = ["33844136", "33099022"]  # Optional known PMIDs to tailor the query
 
 models = ['reflection:70b', 'llama3:8b-instruct-fp16', 'llama3:latest', 'mistral:v0.2', 'mistral-nemo:latest', 'medllama2:latest', 'meditron:70b', 'meditron:7b', 'llama3.1:8b', 'llama3.1:70b', 'gemma:latest', 'phi3:latest', 'phi3:14b', 'gemma2:9b']
-
+# models = ['mistral:v0.2']
 for model_name in models:
     print(f"Testing model: {model_name}")
     # Create an instance of the LLM with the current model
