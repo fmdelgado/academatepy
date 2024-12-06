@@ -3,22 +3,18 @@ import pandas as pd
 import re
 import json
 import logging
-from pydantic import BaseModel
-
-class LLMResponse(BaseModel):
-    content: str
 
 class SemanticScholarQueryGenerator:
-    def __init__(self, api_key, ollama_llm=None):
+    def __init__(self, api_key, llm=None):
         """
         Initializes the SemanticScholarQueryGenerator.
 
         Parameters:
         - api_key (str): Your Semantic Scholar API key.
-        - ollama_llm: An instance of the LLM for generating and improving queries.
+        - llm: An instance of the LLM for generating and improving queries.
         """
         self.api_key = api_key
-        self.ollama_llm = ollama_llm
+        self.llm = llm
         self.headers = {"x-api-key": self.api_key}
         self.from_year = None
         self.to_year = None
@@ -37,220 +33,210 @@ class SemanticScholarQueryGenerator:
         self.from_year = from_year
         self.to_year = to_year
 
-    def generate_query(self, topic, known_paper_ids=None):
+    def generate_query(self, topic):
         """
         Generates a Semantic Scholar query for the given topic.
-
-        Parameters:
-        - topic (str): The research topic.
-        - known_paper_ids (list): Optional list of known paper IDs to tailor the query.
-
-        Returns:
-        - query (str): The generated query.
         """
-        if not self.ollama_llm:
+        if not self.llm:
             raise ValueError("An LLM instance is required to generate the query.")
 
-        if known_paper_ids:
-            articles = self.fetch_article_info(known_paper_ids)
-            if not articles:
-                self.logger.error("No articles fetched with the provided paper IDs.")
-                analysis_text = self.analyze_topic(topic)
+        for attempt in range(2):  # Limit the number of attempts to prevent infinite loops
+            query = self.generate_semantic_scholar_query(topic)
+            query = self.clean_query(query)
+
+            # Validate the query
+            if self.validate_query(query):
+                self.last_query = query  # Store the last generated query
+                return query
             else:
-                analysis_text = self.analyze_articles(articles)
-        else:
-            analysis_text = self.analyze_topic(topic)
+                self.logger.warning("Generated query is invalid. Re-prompting the model.")
+                # Modify the prompt to emphasize the error
+                self.generate_semantic_scholar_query(topic, error=True)
 
-        terms = self.extract_terms(analysis_text)
-        query = self.construct_semantic_scholar_query(terms)
+        raise ValueError("Failed to generate a valid query after multiple attempts.")
 
-        self.last_query = query  # Store the last generated query
-        return query
-
-    def analyze_topic(self, topic):
+    def generate_semantic_scholar_query(self, topic: str, error=False) -> str:
         """
-        Analyzes the topic using the LLM to extract relevant terms.
-
-        Parameters:
-        - topic (str): The research topic.
-
-        Returns:
-        - analysis (str): The analysis text from the LLM.
+        Generates a Semantic Scholar query using the LLM.
         """
-        prompt = f"""Analyze the following research topic and extract key concepts, methodologies, and terminology that would be relevant for a Semantic Scholar search query.
+        error_message = "The previous query was invalid due to syntax errors or missing markers. Please follow the instructions carefully."
 
-Topic:
-{topic}
+        prompt = f"""You are an expert in creating Semantic Scholar search queries.
 
-Provide a concise analysis."""
-        response = self.ollama_llm.invoke(prompt)
-        analysis = self.extract_content(response)
-        return analysis
+    Generate a comprehensive search query for the following research topic:
 
-    def extract_terms(self, analysis_text):
-        """
-        Extracts key terms from the analysis text provided by the LLM.
+    Topic:
+    {topic}
 
-        Parameters:
-        - analysis_text (str): The analysis text containing terms.
+    {error_message if error else ''}
+    
+    You are an expert in creating Semantic Scholar search queries.
 
-        Returns:
-        - terms (list): A list of extracted terms.
-        """
-        prompt = f"""From the following analysis, extract key terms relevant for a Semantic Scholar search.
+    Generate a comprehensive search query for the following research topic:
 
-    Analysis:
-    {analysis_text}
+    Topic:
+    {topic}
 
-    Provide the terms in JSON format as:
-    {{
-        "keywords": ["term1", "term2", ...]
-    }}
+    **Instructions:**
+    - Identify the main concepts in the topic.
+    - For each concept, include up to **three** synonyms or related terms.
+    - Use Boolean operators to combine terms:
+        - Use **'+'** for **AND**.
+        - Use **'|'** for **OR**.
+        - Use **'-'** for **NOT**.
+    - Use quotation marks (**" "** ) for phrases.
+    - Use parentheses to group terms appropriately.
+    - Use wildcard (**'*'**) for word variations if appropriate.
+    - **Do not include any additional text, explanations, or notes.**
+    - **Provide ONLY the query, formatted correctly for the Semantic Scholar API, and nothing else.**
+    - **Enclose your query between the markers `<START_QUERY>` and `<END_QUERY>`. Failure to do so will result in an invalid query.**
 
-    Do not include any additional text or explanations."""
-        response = self.ollama_llm.invoke(prompt)
+    **Example of a correct response:**
+
+    <START_QUERY>
+    ("term1" | "term1 synonym" | "term1 related term") + ("term2" | "term2 synonym")
+    <END_QUERY>
+
+    **Example of an incorrect response (do not do this):**
+
+    Here is your query:
+    <START_QUERY>
+    ("term1" | "term1 synonym") + ("term2" | "term2 synonym")
+    <END_QUERY>
+
+    Provide your query below:
+    """
+        response = self.llm.invoke(prompt)
         content = self.extract_content(response)
-        print("LLM Output:", content)  # Debugging statement
-        # Attempt to fix common JSON issues
-        content_fixed = content.strip()
-        if content_fixed.startswith("```json"):
-            content_fixed = content_fixed[7:]
-        if content_fixed.startswith("```"):
-            content_fixed = content_fixed[3:]
-        if content_fixed.endswith("```"):
-            content_fixed = content_fixed[:-3]
-        try:
-            terms_dict = json.loads(content_fixed)
-            terms = terms_dict.get("keywords", [])
-            print("Extracted Terms:", terms)  # Debugging statement
-            return terms
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse terms from LLM response: {e}")
-            return []
-
-    def construct_semantic_scholar_query(self, terms):
-        """
-        Constructs a Semantic Scholar query from the extracted terms.
-
-        Parameters:
-        - terms (list): List of terms.
-
-        Returns:
-        - query (str): The constructed Semantic Scholar query.
-        """
-        if not terms:
-            self.logger.error("No terms provided to construct the query.")
-            return ""
-
-        # Join the terms with spaces to create a simple keyword query
-        query = ' '.join(terms)
-        print("Constructed Query:", query)  # Debugging statement
+        query = self.extract_query_from_markers(content)
+        query = self.clean_query(query)
         return query
 
-    def fetch_article_info(self, paper_ids):
+    def extract_query_from_markers(self, content: str) -> str:
         """
-        Fetches article information for given paper IDs from Semantic Scholar.
-
-        Parameters:
-        - paper_ids (list): List of Semantic Scholar paper IDs.
-
-        Returns:
-        - articles (list): List of dictionaries containing article info.
+        Extracts the query between the markers <START_QUERY> and <END_QUERY>.
+        If markers are not found, attempts to extract the query heuristically.
         """
-        # Filter out invalid paper IDs
-        paper_ids = [pid for pid in paper_ids if pid and isinstance(pid, str)]
-        if not paper_ids:
-            self.logger.error("No valid paper IDs provided.")
-            return []
-
-        try:
-            url = "https://api.semanticscholar.org/graph/v1/paper/batch"
-            params = {
-                "fields": "paperId,title,abstract,authors,year,venue"
-            }
-            data = {
-                "ids": paper_ids
-            }
-            response = requests.post(url, headers=self.headers, params=params, json=data)
-
-            if response.status_code == 200:
-                articles = response.json()
-                return articles
+        match = re.search(r'<START_QUERY>(.*?)<END_QUERY>', content, re.DOTALL | re.IGNORECASE)
+        if match:
+            query = match.group(1).strip()
+        else:
+            self.logger.warning("Markers not found in LLM output. Attempting to extract query heuristically.")
+            # Heuristic extraction: Assume the query is the first code block or first non-empty line
+            code_blocks = re.findall(r'```.*?```', content, re.DOTALL)
+            if code_blocks:
+                query = code_blocks[0].strip('`').strip()
             else:
-                self.logger.error(f"Error fetching article info: {response.status_code} {response.text}")
-                return []
-        except Exception as e:
-            self.logger.error(f"Error fetching article info: {str(e)}")
-            return []
+                lines = content.strip().split('\n')
+                query = lines[0].strip()
+        return query
 
-    def analyze_articles(self, articles):
+    def clean_query(self, query: str) -> str:
         """
-        Analyzes articles to extract key terms using the LLM.
-
-        Parameters:
-        - articles (list): List of article dictionaries.
-
-        Returns:
-        - analysis (str): Analysis result from the LLM.
+        Cleans and formats the generated query.
         """
-        combined_text = "\n\n".join([
-            f"Title: {article.get('title', '')}\nAbstract: {article.get('abstract', '')}"
-            for article in articles if article.get('title') and article.get('abstract')
-        ])
-
-        if not combined_text:
-            self.logger.error("No valid articles to analyze.")
+        if not query:
             return ""
 
-        prompt = f"""Analyze the following scientific articles and extract key concepts, methodologies, and terminology that would be relevant for a Semantic Scholar search query:
+        # Remove any accidental markers or extra text
+        query = re.sub(r'<.*?>', '', query)
 
-{combined_text}
+        # Replace fancy quotes with straight quotes
+        query = query.replace('“', '"').replace('”', '"').replace('‘', "'").replace('’', "'")
 
-Provide a concise summary of the main research topic and list key terms that should be included in a Semantic Scholar search query to find similar articles."""
-        response = self.ollama_llm.invoke(prompt)
-        analysis = self.extract_content(response)
-        return analysis
+        # Replace curly braces with parentheses
+        query = query.replace('{', '(').replace('}', ')')
 
-    def execute_query(self, query, limit=100):
+        # Remove any unsupported characters
+        query = re.sub(r'[^\w\s\+\|\-\(\)\*\"\'\:\.]', '', query)
+
+        # Remove extra spaces
+        query = re.sub(r'\s+', ' ', query).strip()
+
+        # Ensure balanced parentheses
+        if query.count('(') != query.count(')'):
+            self.logger.warning("Unbalanced parentheses in the query.")
+
+        return query
+
+    def extract_content(self, response):
+        """
+        Extracts the text content from the LLM response.
+
+        Parameters:
+        - response: The response object from the LLM.
+
+        Returns:
+        - content (str): The extracted text content.
+        """
+        try:
+            if isinstance(response, str):
+                return response.strip()
+            elif hasattr(response, 'content'):
+                return response.content.strip()
+            elif isinstance(response, dict) and 'content' in response:
+                return response['content'].strip()
+            else:
+                self.logger.warning("Unexpected response format. Attempting to convert to string.")
+                return str(response).strip()
+        except Exception as e:
+            self.logger.error(f"Error extracting content from response: {e}")
+            return ""
+
+    def execute_query(self, query: str, max_results: int = 10000) -> None:
         """
         Executes the Semantic Scholar query and retrieves the results.
-
-        Parameters:
-        - query (str): The Semantic Scholar query to execute.
-        - limit (int): Maximum number of results to retrieve.
         """
         try:
             params = {
                 "query": query,
-                "limit": limit,
-                "fields": "paperId,title,abstract,authors,year,venue,embedding"
+                "fields": "paperId,title,abstract,authors,year,venue,externalIds",  # Added 'externalIds'
+                "limit": 1000  # Maximum allowed per request
             }
 
             # Apply date filters
-            filters = []
-            if self.from_year and self.to_year:
-                filters.append(f"year:{self.from_year}-{self.to_year}")
-            elif self.from_year:
-                filters.append(f"year:{self.from_year}-")
-            elif self.to_year:
-                filters.append(f"year:-{self.to_year}")
+            if self.from_year or self.to_year:
+                publication_date = ""
+                if self.from_year:
+                    publication_date += f"{self.from_year}"
+                publication_date += ":"
+                if self.to_year:
+                    publication_date += f"{self.to_year}"
+                params['publicationDateOrYear'] = publication_date
 
-            if filters:
-                params['filter'] = ','.join(filters)
+            papers = []
+            total_results = 0
+            token = None
 
-            response = requests.get(
-                "https://api.semanticscholar.org/graph/v1/paper/search",
-                headers=self.headers,
-                params=params
-            )
+            while total_results < max_results:
+                if token:
+                    params['token'] = token
 
-            if response.status_code == 200:
-                data = response.json()
-                papers = data.get('data', [])
-                self.results = self.process_papers(papers)
-            else:
-                self.logger.error(f"Error executing query: {response.status_code} {response.text}")
-                self.results = pd.DataFrame()
+                response = requests.get(
+                    "https://api.semanticscholar.org/graph/v1/paper/search/bulk",
+                    headers=self.headers,
+                    params=params
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+                    batch_papers = data.get('data', [])
+                    papers.extend(batch_papers)
+                    total_results += len(batch_papers)
+
+                    if 'next' in data and data['next']:
+                        token = data['next']
+                    else:
+                        break  # No more data
+                else:
+                    self.logger.error(f"Error executing query: {response.status_code} {response.text}")
+                    break
+
+                # Stop if we've reached the max_results
+                if total_results >= max_results:
+                    break
+
+            self.results = self.process_papers(papers[:max_results])
         except Exception as e:
             self.logger.error(f"Error executing query: {str(e)}")
             self.results = pd.DataFrame()
@@ -271,7 +257,7 @@ Provide a concise summary of the main research topic and list key terms that sho
         years = []
         venues = []
         paper_ids = []
-        embeddings = []
+        dois = []
 
         for paper in papers:
             titles.append(paper.get('title', ''))
@@ -281,8 +267,9 @@ Provide a concise summary of the main research topic and list key terms that sho
             years.append(paper.get('year', ''))
             venues.append(paper.get('venue', ''))
             paper_ids.append(paper.get('paperId', ''))
-            embedding = paper.get('embedding', {}).get('vector', None)
-            embeddings.append(embedding)
+            external_ids = paper.get('externalIds', {})
+            doi = external_ids.get('DOI', '')
+            dois.append(doi)
 
         df = pd.DataFrame({
             "Paper ID": paper_ids,
@@ -291,9 +278,31 @@ Provide a concise summary of the main research topic and list key terms that sho
             "Authors": authors_list,
             "Year": years,
             "Venue": venues,
-            "Embedding": embeddings
+            "DOI": dois
         })
         return df
+
+    def validate_query(self, query: str) -> bool:
+        """
+        Validates the query for correct syntax.
+        """
+        # Check for unbalanced parentheses
+        if query.count('(') != query.count(')'):
+            self.logger.error("Unbalanced parentheses in the query.")
+            return False
+
+        # Check for unsupported characters (e.g., curly braces)
+        if '{' in query or '}' in query:
+            self.logger.error("Unsupported characters in the query.")
+            return False
+
+        # Check for invalid operators or characters
+        invalid_chars = re.findall(r'[^\w\s\+\|\-\(\)\*\"\'\:\.]', query)
+        if invalid_chars:
+            self.logger.error(f"Unsupported characters in the query: {set(invalid_chars)}")
+            return False
+
+        return True
 
     def get_results_dataframe(self):
         """
@@ -303,78 +312,3 @@ Provide a concise summary of the main research topic and list key terms that sho
         - DataFrame containing the results.
         """
         return self.results
-
-    def extract_content(self, response):
-        """
-        Extracts the text content from the LLM response.
-
-        Parameters:
-        - response: The response object from the LLM.
-
-        Returns:
-        - content (str): The extracted text content.
-        """
-        try:
-            if isinstance(response, str):
-                return response
-            elif hasattr(response, 'content'):
-                return response.content
-            elif isinstance(response, dict) and 'content' in response:
-                return response['content']
-            else:
-                self.logger.warning("Unexpected response format. Attempting to convert to string.")
-                return str(response)
-        except Exception as e:
-            self.logger.error(f"Error extracting content from response: {e}")
-            return ""
-
-
-from langchain_ollama.chat_models import ChatOllama
-import os
-from dotenv import load_dotenv
-import requests
-import json
-# Load environment variables
-dotenv_path = '/Users/fernando/Documents/Research/academatepy/.env'
-load_dotenv(dotenv_path)
-
-# Authenticate and get JWT token if required
-auth_response = requests.post(
-    os.getenv('AUTH_URL'),
-    json={'email': os.getenv('ollama_user'), 'password': os.getenv('ollama_pw')}
-)
-jwt = json.loads(auth_response.text)["token"]
-headers = {"Authorization": "Bearer " + jwt}
-
-# Create an instance of the LLM
-ollama_llm = ChatOllama(
-    base_url=os.getenv('OLLAMA_API_URL'),
-    model='mistral:v0.2',
-    temperature=0.0,
-    client_kwargs={'headers': headers},
-    format="json"
-)
-
-# Get the API key from environment variable
-api_key = os.getenv("SEMANTIC_SCHOLAR_API_KEY")
-
-# Create an instance of the SemanticScholarQueryGenerator
-semantic_scholar_query_gen = SemanticScholarQueryGenerator(api_key, ollama_llm)
-
-# Optionally set date filters
-semantic_scholar_query_gen.set_date_filter(from_year=2010)
-
-# Generate a query for a topic
-topic = "The role of artificial intelligence in drug discovery"
-# No known paper IDs
-query = semantic_scholar_query_gen.generate_query(topic)
-
-print(f"Generated Query:\n{query}")
-
-# Execute the query
-semantic_scholar_query_gen.execute_query(query)
-
-# Get the results as a DataFrame
-results_df = semantic_scholar_query_gen.get_results_dataframe()
-
-print(results_df.head())

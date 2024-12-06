@@ -1,12 +1,14 @@
-
 import pandas as pd
 from Bio import Entrez
 import re
 from pydantic import BaseModel
 import logging
 import json
+
+
 class LLMResponse(BaseModel):
     content: str
+
 
 class PubMedQueryGenerator:
     def __init__(self, email, api_key, ollama_llm=None):
@@ -26,6 +28,7 @@ class PubMedQueryGenerator:
         self.from_year = None
         self.to_year = None
         self.results = None
+        self.last_query = ""
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
 
@@ -40,9 +43,21 @@ class PubMedQueryGenerator:
         self.from_year = from_year
         self.to_year = to_year
 
+    def get_date_filter(self):
+        """
+        Constructs the date filter string for PubMed query.
+
+        Returns:
+        - date_filter (str): The date filter string.
+        """
+        from_year = self.from_year if self.from_year else "1000"
+        to_year = self.to_year if self.to_year else "3000"
+        date_filter = f'("{from_year}/01/01"[Date - Publication] : "{to_year}/12/31"[Date - Publication])'
+        return date_filter
+
     def generate_query(self, topic, known_pmids=None):
         """
-        Generates a PubMed query for the given topic.
+        Generates a PubMed query for the given topic using the LLM.
 
         Parameters:
         - topic (str): The research topic.
@@ -54,14 +69,8 @@ class PubMedQueryGenerator:
         if not self.ollama_llm:
             raise ValueError("An LLM instance is required to generate the query.")
 
-        if known_pmids:
-            articles = self.fetch_article_info(known_pmids)
-            analysis_text = self.analyze_articles(articles)
-        else:
-            analysis_text = self.analyze_topic(topic)
-
-        terms = self.extract_terms(analysis_text)
-        query = self.construct_pubmed_query(terms)
+        # Generate the query using the LLM
+        query = self.generate_query_with_llm(topic)
 
         # Apply date filters if set
         if self.from_year or self.to_year:
@@ -71,31 +80,126 @@ class PubMedQueryGenerator:
         self.last_query = query  # Store the last generated query
         return query
 
-    def analyze_topic(self, topic):
+    def generate_query_with_llm(self, topic):
         """
-        Analyzes the topic using the LLM to extract relevant terms.
-
-        Parameters:
-        - topic (str): The research topic.
-
-        Returns:
-        - analysis (str): The analysis text from the LLM.
+        Generates a PubMed query for the topic using the LLM.
         """
-        prompt = f"""Analyze the following research topic and extract key concepts, methodologies, and terminology that would be relevant for a PubMed search query.
+        prompt = f"""You are an expert in creating PubMed search queries.
+
+    Generate a PubMed search query for the following research topic:
 
     Topic:
     {topic}
 
-    Provide a concise analysis."""
-        response = self.ollama_llm.invoke(prompt)
-        analysis = self.extract_content(response)
-        return analysis
+    Requirements:
+    1. Identify the main concepts in the topic.
+    2. For each concept, include synonyms and related terms.
+    3. Use MeSH terms where appropriate.
+    4. Use OR to combine synonyms within a concept.
+    5. Use AND to combine different concepts.
+    6. Use field tags like [Title/Abstract], [MeSH Terms], etc.
+    7. Use parentheses to ensure the correct grouping of terms.
+    8. **Do not include any JSON, keys, or extra characters.**
+    9. **Provide ONLY the query, and no additional text or explanations.**
+    10. **Enclose your query between the markers `<START_QUERY>` and `<END_QUERY>`. Failure to do so will result in an invalid query.**
 
-    def get_date_filter(self):
-        from_year = self.from_year if self.from_year else "1000"
-        to_year = self.to_year if self.to_year else "3000"
-        date_filter = f'("{from_year}/01/01"[Date - Publication] : "{to_year}/12/31"[Date - Publication])'
-        return date_filter
+    Example:
+
+    <START_QUERY>
+    ((("term1"[Title/Abstract] OR "term1 synonym"[Title/Abstract] OR "Term1 MeSH"[MeSH Terms]) AND ("term2"[Title/Abstract] OR "term2 synonym"[Title/Abstract] OR "Term2 MeSH"[MeSH Terms])))
+    <END_QUERY>
+
+    Provide your query below:
+    """
+        response = self.ollama_llm.invoke(prompt)
+        content = self.extract_content(response)
+        query = self.extract_query_from_markers(content)
+        query = self.clean_query(query)
+        return query
+
+    def extract_query_from_markers(self, content):
+        """
+        Extracts the query between the markers <START_QUERY> and <END_QUERY>.
+        """
+        match = re.search(r'<START_QUERY>(.*?)<END_QUERY>', content, re.DOTALL | re.IGNORECASE)
+        if match:
+            query = match.group(1).strip()
+        else:
+            self.logger.error("Markers not found in LLM output. Unable to extract query.")
+            raise ValueError("Markers not found in LLM output.")
+        return query
+
+    def extract_query_from_response(self, response):
+        """
+        Extracts the 'query' from the LLM's JSON response.
+        """
+        if isinstance(response, dict):
+            data = response
+        else:
+            try:
+                data = json.loads(response)
+            except json.JSONDecodeError:
+                self.logger.error("Failed to parse JSON from LLM response.")
+                return ""
+
+        if 'query' in data:
+            query = data['query']
+            return query
+        else:
+            self.logger.error("No 'query' key found in LLM response.")
+            return ""
+
+    def clean_query(self, query):
+        """
+        Cleans and formats the generated query.
+        """
+        if not query:
+            return ""
+
+        # Ensure query is a string
+        if not isinstance(query, str):
+            query = str(query)
+
+        # Remove leading/trailing whitespace and unwanted characters
+        query = query.strip("`'\" \n\t")
+
+        # Remove any accidental markers or extra text
+        query = re.sub(r'<.*?>', '', query)
+
+        # Replace multiple spaces with a single space
+        query = re.sub(r'\s+', ' ', query).strip()
+
+        # Ensure proper parentheses
+        if not query.startswith("("):
+            query = "(" + query
+        if not query.endswith(")"):
+            query = query + ")"
+
+        return query
+
+    def extract_content(self, response):
+        """
+        Extracts the text content from the LLM response.
+
+        Parameters:
+        - response: The response object from the LLM.
+
+        Returns:
+        - content (str): The extracted text content.
+        """
+        try:
+            if isinstance(response, str):
+                return response
+            elif hasattr(response, 'content'):
+                return response.content
+            elif isinstance(response, dict) and 'content' in response:
+                return response['content']
+            else:
+                self.logger.warning("Unexpected response format. Attempting to convert to string.")
+                return str(response)
+        except Exception as e:
+            self.logger.error(f"Error extracting content from response: {e}")
+            return ""
 
     def execute_query(self, query, max_results=10000):
         """
@@ -253,279 +357,5 @@ class PubMedQueryGenerator:
             self.logger.error(f"Error fetching article info: {str(e)}")
             return []
 
-    def analyze_articles(self, articles):
-        """
-        Analyzes articles to extract key terms using the LLM.
 
-        Parameters:
-        - articles (list): List of article dictionaries.
 
-        Returns:
-        - analysis (str): Analysis result from the LLM.
-        """
-        combined_text = "\n\n".join([f"Title: {a['Title']}\nAbstract: {a['Abstract']}" for a in articles])
-
-        prompt = f"""Analyze the following scientific articles and extract key concepts, methodologies, and terminology that would be relevant for a PubMed search query:
-
-{combined_text}
-
-Provide a concise summary of the main research topic and list key terms that should be included in a PubMed search query to find similar articles."""
-
-        response = self.ollama_llm.invoke(prompt)
-
-        # Extract the text content of the response
-        analysis = self.extract_content(response)
-        return analysis
-
-    def generate_context_aware_query(self, topic, article_analysis):
-        """
-        Generates a context-aware PubMed query using the LLM.
-
-        Parameters:
-        - topic (str): The research topic.
-        - article_analysis (str): Analysis of relevant articles.
-
-        Returns:
-        - query (str): The generated PubMed query.
-        """
-        prompt = f"""Generate a comprehensive PubMed search query for the following topic:
-
-{topic}
-
-Consider the following analysis of relevant articles:
-
-{article_analysis}
-
-Guidelines:
-1. Use a combination of MeSH terms and free text searches.
-2. Use field tags like [Title/Abstract], [MeSH Terms], etc.
-3. Use boolean operators (AND, OR, NOT) to create effective query structures.
-4. Include relevant synonyms and related terms from the article analysis.
-5. Balance specificity and sensitivity.
-6. Include a date range for publications since 2010.
-
-Use this exact format for the date range:
-("2010/01/01"[Date - Publication] : "3000"[Date - Publication])
-
-Your query should look like this:
-((term1[Title/Abstract] OR "term1"[MeSH Terms]) AND (term2[Title/Abstract] OR "term2"[MeSH Terms]) AND ("2010/01/01"[Date - Publication] : "3000"[Date - Publication]))
-
-Provide ONLY the query, no explanations. Start with (( and end with ))."""
-
-        response = self.ollama_llm.invoke(prompt)
-
-        # Extract the text content of the response
-        query = self.extract_content(response)
-
-        query = self.clean_query(query)
-        return query
-
-    def generate_pubmed_query(self, topic):
-        # Analyze the topic to extract terms
-        analysis = self.analyze_topic(topic)
-        terms = self.extract_terms(analysis)
-
-        # Construct the query
-        query = self.construct_pubmed_query(terms)
-        return query
-
-    def extract_terms(self, analysis_text):
-        """
-        Extracts key terms and MeSH terms from the analysis text provided by the LLM.
-
-        Parameters:
-        - analysis_text (str): The analysis text containing terms.
-
-        Returns:
-        - terms (dict): A dictionary with 'keywords' and 'MeSH' as keys.
-        """
-        prompt = f"""From the following analysis, extract key terms and MeSH terms relevant for PubMed search.
-
-    Analysis:
-    {analysis_text}
-
-    Provide the terms in JSON format as:
-    {{
-        "keywords": ["term1", "term2", ...],
-        "MeSH": ["MeSH term1", "MeSH term2", ...]
-    }}
-
-    Do not include any additional text or explanations."""
-
-        response = self.ollama_llm.invoke(prompt)
-        content = self.extract_content(response)
-        try:
-            terms = json.loads(content)
-            return terms
-        except json.JSONDecodeError:
-            self.logger.error("Failed to parse terms from LLM response.")
-            return {"keywords": [], "MeSH": []}
-
-    def construct_pubmed_query(self, terms):
-        """
-        Constructs a PubMed query from the extracted terms.
-
-        Parameters:
-        - terms (dict): Dictionary containing 'keywords' and 'MeSH' terms.
-
-        Returns:
-        - query (str): The constructed PubMed query.
-        """
-        keyword_queries = [f'"{term}"[Title/Abstract]' for term in terms.get('keywords', [])]
-        mesh_queries = [f'"{term}"[MeSH Terms]' for term in terms.get('MeSH', [])]
-
-        combined_queries = keyword_queries + mesh_queries
-        if not combined_queries:
-            self.logger.error("No terms provided to construct the query.")
-            return ""
-
-        query = " OR ".join(combined_queries)
-        query = f"({query})"
-        return query
-
-    def clean_query(self, query):
-        """
-        Cleans and formats the generated query.
-
-        Parameters:
-        - query (str): The raw query string from the LLM.
-
-        Returns:
-        - query (str): The cleaned query string.
-        """
-        if not query:
-            return None
-
-        # Ensure query is a string
-        if not isinstance(query, str):
-            query = str(query)
-
-        query = re.sub(r'^[{\["\'`]|[}\]"\'`]$', '', query)
-        main_query_match = re.search(r'\(\((.*?)\)\)', query, re.DOTALL)
-        if main_query_match:
-            query = main_query_match.group(1)
-
-        query = re.sub(
-            r'\[?(\d{4}/\d{2}/\d{2})\s*:\s*(\d{4})\]?',
-            r'("\1"[Date - Publication] : "\2"[Date - Publication])',
-            query
-        )
-        query = f"(({query}))"
-        query = re.sub(r'\s+', ' ', query).strip()
-
-        return query
-
-    def extract_content(self, response):
-        """
-        Extracts the text content from the LLM response.
-
-        Parameters:
-        - response: The response object from the LLM.
-
-        Returns:
-        - content (str): The extracted text content.
-        """
-        try:
-            if isinstance(response, str):
-                return response
-            elif hasattr(response, 'content'):
-                return response.content
-            elif isinstance(response, dict) and 'content' in response:
-                return response['content']
-            else:
-                self.logger.warning("Unexpected response format. Attempting to convert to string.")
-                return str(response)
-        except Exception as e:
-            self.logger.error(f"Error extracting content from response: {e}")
-            return ""
-
-    def parse_json_safely(self, json_string):
-        """
-        Safely parses a JSON string, handling exceptions.
-
-        Parameters:
-        - json_string (str): The JSON string to parse.
-
-        Returns:
-        - dict: Parsed JSON data or empty dict if parsing fails.
-        """
-        try:
-            return json.loads(json_string)
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse JSON: {e}\nResponse was: {json_string}")
-            return {}
-#
-# # Import the necessary modules
-# from langchain_ollama.chat_models import ChatOllama
-# import os
-# from dotenv import load_dotenv
-# import requests
-# import json
-#
-# # Authenticate and get JWT token if required
-# dotenv_path = '/Users/fernando/Documents/Research/academatepy/.env'
-# load_dotenv(dotenv_path)
-#
-# auth_response = requests.post(os.getenv('AUTH_URL'), json= {'email': os.getenv('ollama_user'), 'password': os.getenv('ollama_pw')})
-# jwt = json.loads(auth_response.text)["token"]
-# headers = {"Authorization": "Bearer " + jwt}
-#
-# # Create an instance of the LLM
-# ollama_llm = ChatOllama(
-#     base_url=os.getenv('OLLAMA_API_URL'),
-#     model='mistral:v0.2',
-#     temperature=0.0,
-#     client_kwargs={'headers': headers},
-#     format="json"
-# )
-#
-# # Create an instance of the PubMedQueryGenerator
-# email = "your.email@example.com"
-# api_key = os.getenv("NCBI_API_KEY")  # Replace with your actual NCBI API key
-#
-# pubmed_query_gen = PubMedQueryGenerator(email, api_key, ollama_llm)
-#
-# # Optionally set date filters
-# pubmed_query_gen.set_date_filter(from_year=2010)
-#
-# # Generate a query for a topic
-# topic = "The role of artificial intelligence in drug discovery"
-# known_pmids = ["33844136", "33099022"]  # Optional known PMIDs to tailor the query
-#
-# query = pubmed_query_gen.generate_query(topic, known_pmids=known_pmids)
-#
-# print(f"Generated Query:\n{query}")
-#
-# # Execute the query
-# pubmed_query_gen.execute_query(query)
-#
-# # Get the results as a DataFrame
-# results_df = pubmed_query_gen.get_results_dataframe()
-#
-# print(results_df.head())
-#
-# models = ['reflection:70b', 'llama3:8b-instruct-fp16', 'llama3:latest', 'mistral:v0.2', 'mistral-nemo:latest', 'medllama2:latest', 'meditron:70b', 'meditron:7b', 'llama3.1:8b', 'llama3.1:70b', 'gemma:latest', 'phi3:latest', 'phi3:14b', 'gemma2:9b']
-#
-# for model_name in models:
-#     print(f"Testing model: {model_name}")
-#     # Create an instance of the LLM with the current model
-#     ollama_llm = ChatOllama(
-#         base_url=os.getenv('OLLAMA_API_URL'),
-#         model=model_name,
-#         temperature=0.0,
-#         client_kwargs={'headers': headers},
-#         format="json"
-#     )
-#     # Create a new instance of the PubMedQueryGenerator
-#     pubmed_query_gen = PubMedQueryGenerator(email, api_key, ollama_llm)
-#     pubmed_query_gen.set_date_filter(from_year=2010)
-#     # Generate the query
-#     query = pubmed_query_gen.generate_pubmed_query(topic)
-#     print(f"Generated Query with {model_name}:\n{query}\n")
-#     # Optionally, you can test executing the query and handle exceptions
-#     try:
-#         pubmed_query_gen.execute_query(query)
-#         results_df = pubmed_query_gen.get_results_dataframe()
-#         print(f"Results with {model_name}:\n{results_df.head()}\n")
-#     except Exception as e:
-#         print(f"Error with model {model_name}: {e}\n")
