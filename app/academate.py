@@ -19,6 +19,8 @@ from langchain_chroma import Chroma
 import tempfile
 import shutil
 from pdf_downloading_module.PDF_downloader import ArticleDownloader
+import hashlib
+import re
 
 email = 'fernando.miguel.delgado-chaves@uni-hamburg.de'
 # Set logging level to suppress DEBUG messages from other libraries
@@ -64,12 +66,15 @@ class academate:
         self.embeddings = embeddings
         self.vector_store_path = vector_store_path
         self.literature_df = literature_df
+
         if self.embeddings_path is None:
             self.embeddings_path = f"{self.vector_store_path}/embeddings"
+        self.content_column = content_column
+
         if self.literature_df is not None:
             self.literature_df.reset_index(drop=True, inplace=True)
-            self.literature_df['uniqueid'] = self.literature_df.index.astype(str)
-        self.content_column = content_column
+            self.literature_df['uniqueid'] = self.literature_df.apply(self.generate_uniqueid, axis=1)
+            self.check_and_remove_duplicates()
 
         # Screening attributes
         self.selected_fetch_k = 20
@@ -130,6 +135,44 @@ class academate:
         self.analysis_time = None
         self.db = None
 
+
+    def check_and_remove_duplicates(self):
+        """
+        Checks for duplicate unique IDs in the DataFrame, warns the user,
+        and removes duplicates based on the 'Record' column.
+        """
+        num_duplicates = len(self.literature_df) - len(set(self.literature_df['uniqueid']))
+
+        if num_duplicates > 0:
+            self.logger.warning(f"Detected {num_duplicates} duplicate unique IDs in the DataFrame.")
+
+            # Find and print duplicate rows based on 'uniqueid'
+            duplicate_rows = self.literature_df[self.literature_df.duplicated('uniqueid', keep=False)]
+            duplicate_rows = duplicate_rows.sort_values(by='uniqueid')
+            self.logger.warning("Duplicate rows based on uniqueid:")
+            for index, row in duplicate_rows.iterrows():
+                self.logger.warning(f"  uniqueid: {row['uniqueid']}, Record: {row['Record']}")
+
+            # Remove duplicates based on 'Record' column
+            self.literature_df.drop_duplicates(subset='uniqueid', keep='first', inplace=True)
+            self.logger.info(f"Removed duplicates based on '{self.content_column}' column. {len(self.literature_df)} rows remaining.")
+        else:
+            self.logger.info("No duplicate unique IDs found.")
+
+    def generate_uniqueid(self, row):
+        """
+        Generates a consistent row ID based on the normalized description.
+        Combines normalization and hashing into a single function.
+        """
+        # Normalize while preserving some punctuation
+        normalized_description = re.sub(r'[^a-zA-Z0-9 \-():]', '', row[self.content_column])
+
+        # Normalize whitespace
+        normalized_description = ' '.join(normalized_description.split())
+
+        key_string = f"{normalized_description}"
+        return hashlib.sha256(key_string.encode()).hexdigest()
+
     # EMBEDDINGS
     def embed_literature_df(self, path_name=None):
         if path_name is None:
@@ -185,23 +228,6 @@ class academate:
         # Validate the index
         self.validate_index()
         return self.db
-
-    def merge_screening1_embeddings(self, literature_df: pd.DataFrame = None):
-        """
-        Takes the embeddings of the literature DataFrame and merges the resulting vectorDBs in chunks.
-        Args:
-            literature_df:
-
-        Returns:
-            The merged vectorDB.
-        """
-        if literature_df is not None:
-            self.literature_df = literature_df
-
-        # Load the embeddings
-        self.vectorDB_screening1 = self.embed_literature_df(path_name=self.embeddings_path1)
-        fig = self.visualizer.plot_vector_DB(self.vectorDB_screening1)
-        return fig
 
     # PROMPTING AND CHAINS
 
@@ -505,6 +531,7 @@ class academate:
         # Create tasks for each record
         tasks = []
         for recnumber in records_to_process:
+            # print(recnumber)
             task = asyncio.create_task(process_with_semaphore(recnumber))
             tasks.append(task)
 
@@ -546,11 +573,20 @@ class academate:
         data_dict = {}
         missing_keys = set()
         for key in answerset.keys():
+            if not isinstance(answerset[key], dict):
+                self.logger.error(f"Unexpected type for record {key}: {type(answerset[key])}. Skipping this record.")
+                missing_keys.add(key)
+                continue
             data_dict[key] = {}
             for checkpoint_studied in self.criteria_dict.keys():
-                if checkpoint_studied in answerset[key]:
-                    data_dict[key][checkpoint_studied] = answerset[key][checkpoint_studied].get('label', False)
+                answer = answerset[key].get(checkpoint_studied)
+                if isinstance(answer, dict):
+                    data_dict[key][checkpoint_studied] = answer.get('label', False)
+                elif isinstance(answer, bool):  # Handle boolean directly
+                    data_dict[key][checkpoint_studied] = answer
                 else:
+                    self.logger.warning(
+                        f"Unexpected type for criterion '{checkpoint_studied}' in record {key}: {type(answer)}")
                     data_dict[key][checkpoint_studied] = False
                     missing_keys.add(checkpoint_studied)
 
@@ -569,12 +605,19 @@ class academate:
         # Load existing screening data
         self.load_existing_screening_data(screening_type)
         record2answer = getattr(self, f"{screening_type}_record2answer")
+        missing_records = getattr(self, f"{screening_type}_missing_records")  # Get missing_records
+
         # Determine records to process
         records_to_process = [rec for rec in self.get_rec_numbers(screening_type) if rec not in record2answer]
 
+        # Add missing records to records_to_process
+        for rec in missing_records:
+            if rec not in records_to_process:
+                records_to_process.append(rec)
+
         # If there are no records to process, exit early
         if not records_to_process:
-            self.logger.info("All records have been processed. No further action required.")
+            self.logger.info("All records have been processed, or only previously processed records are present.")
             return
 
         # Create the chain
@@ -609,11 +652,11 @@ class academate:
         self.logger.info(f"Total number of records: {len(self.literature_df)}")
 
         start_time = time.time()
-        self.base_screening('screening1')
+        self.base_screening(screening_type='screening1')
         # Validate mutual exclusivity
-        self.validate_mutual_exclusivity('screening1')
+        self.validate_mutual_exclusivity(screening_type='screening1')
         self.analysis_time = time.time() - start_time
-        self.results_screening1 = self.post_screening_analysis('screening1')
+        self.results_screening1 = self.post_screening_analysis(screening_type='screening1')
         self.results_screening1['runtime_scr1'] = self.analysis_time
         # rename criteria columns to add '_scr1'
         self.results_screening1.rename(columns={key: key + '_scr1' for key in self.criteria_dict.keys()}, inplace=True)
@@ -621,6 +664,7 @@ class academate:
         # Add this line to rename 'predicted_screening' to 'predicted_screening1'
         self.results_screening1.rename(columns={'predicted_screening': 'predicted_screening1'}, inplace=True)
 
+        # self.logger.info(f"Columns
         # self.logger.info(f"Columns in results_screening1: {self.results_screening1.columns}")
 
         return self.results_screening1
@@ -695,7 +739,12 @@ class academate:
             print("There are inconsistencies between your criteria_dict and the model's output.")
             print("Consider updating your criteria_dict or adjusting your model prompt.")
 
-        df, struct_missing_keys = self.structure_output(answerset=record2answer)
+        try:
+            df, struct_missing_keys = self.structure_output(answerset=record2answer)
+        except Exception as e:
+            self.logger.error(f"Error in structure_output for record2answer: {record2answer}. Exception: {e}")
+            raise
+
         df = self.select_articles_based_on_criteria(df)
 
         if struct_missing_keys:
@@ -1059,6 +1108,24 @@ class academate:
             raise
 
     # GENERATE REPORTS
+
+    def merge_screening1_embeddings(self, literature_df: pd.DataFrame = None):
+        """
+        Takes the embeddings of the literature DataFrame and merges the resulting vectorDBs in chunks.
+        Args:
+            literature_df:
+
+        Returns:
+            The merged vectorDB.
+        """
+        if literature_df is not None:
+            self.literature_df = literature_df
+
+        # Load the embeddings
+        self.vectorDB_screening1 = self.embed_literature_df(path_name=self.embeddings_path1)
+        fig = self.visualizer.plot_vector_DB(self.vectorDB_screening1)
+        return fig
+
     def create_PRISMA_visualization(self, save_results=True):
         """
         Visualizes the PRISMA flow diagram based on the screening results.
@@ -1237,5 +1304,3 @@ class academate:
             worksheet.freeze_panes(1, 0)
 
         print(f"Excel report saved to {filename}")
-
-
