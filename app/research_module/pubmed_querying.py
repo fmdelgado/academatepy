@@ -11,7 +11,7 @@ class LLMResponse(BaseModel):
 
 
 class PubMedQueryGenerator:
-    def __init__(self, email, api_key, ollama_llm=None):
+    def __init__(self, email, api_key, ollama_llm=None, two_step_search_query=False):
         """
         Initializes the PubMedQueryGenerator.
 
@@ -19,10 +19,12 @@ class PubMedQueryGenerator:
         - email (str): Your email address (required by NCBI).
         - api_key (str): Your NCBI API key.
         - ollama_llm: An instance of the LLM for generating and improving queries.
+        - two_step_search_query (bool): Whether to use a two-step approach for query generation.
         """
         self.email = email
         self.api_key = api_key
         self.ollama_llm = ollama_llm
+        self.two_step_search_query = two_step_search_query
         Entrez.email = self.email
         Entrez.api_key = self.api_key
         self.from_year = None
@@ -70,7 +72,10 @@ class PubMedQueryGenerator:
             raise ValueError("An LLM instance is required to generate the query.")
 
         # Generate the query using the LLM
-        query = self.generate_query_with_llm(topic)
+        if self.two_step_search_query:
+            query = self.generate_query_with_llm_given_keywords(topic)
+        else:
+            query = self.generate_query_with_llm(topic)
 
         # Apply date filters if set
         if self.from_year or self.to_year:
@@ -116,7 +121,40 @@ class PubMedQueryGenerator:
         query = self.extract_query_from_markers(content)
         query = self.clean_query(query)
         return query
+    
+    def generate_query_with_llm_given_keywords(self, keywords):
+        """
+        Generates a PubMed query for the topic using the LLM.
+        """
+        prompt = f"""You are an expert in creating PubMed search queries.
 
+        Generate a PubMed search query for the following keywords:
+        {keywords}
+
+        Requirements:
+        1. Use MeSH terms where appropriate.
+        2. Use OR to combine synonyms within a concept.
+        3. Use AND to combine different concepts.
+        4. Use field tags like [Title/Abstract], [MeSH Terms], etc.
+        5. Use parentheses to ensure the correct grouping of terms.
+        6. **Do not include any JSON, keys, or extra characters.**
+        7. **Provide ONLY the query, and no additional text or explanations.**
+        8. **Enclose your query between the markers `<START_QUERY>` and `<END_QUERY>`. Failure to do so will result in an invalid query.**
+
+        Example:
+
+        <START_QUERY>
+        ((("term1"[Title/Abstract] OR "term1 synonym"[Title/Abstract] OR "Term1 MeSH"[MeSH Terms]) AND ("term2"[Title/Abstract] OR "term2 synonym"[Title/Abstract] OR "Term2 MeSH"[MeSH Terms])))
+        <END_QUERY>
+
+        Provide your query below:
+        """
+        response = self.ollama_llm.invoke(prompt)
+        content = self.extract_content(response)
+        query = self.extract_query_from_markers(content)
+        query = self.clean_query(query)
+        return query
+    
     def extract_query_from_markers(self, content):
         """
         Extracts the query between the markers <START_QUERY> and <END_QUERY>.

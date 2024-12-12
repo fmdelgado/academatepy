@@ -5,7 +5,7 @@ import json
 import logging
 
 class SemanticScholarQueryGenerator:
-    def __init__(self, api_key, llm=None):
+    def __init__(self, api_key, llm=None, two_step_search_queries=False):
         """
         Initializes the SemanticScholarQueryGenerator.
 
@@ -15,6 +15,7 @@ class SemanticScholarQueryGenerator:
         """
         self.api_key = api_key
         self.llm = llm
+        self.two_step_search_queries = two_step_search_queries
         self.headers = {"x-api-key": self.api_key}
         self.from_year = None
         self.to_year = None
@@ -41,7 +42,10 @@ class SemanticScholarQueryGenerator:
             raise ValueError("An LLM instance is required to generate the query.")
 
         for attempt in range(2):  # Limit the number of attempts to prevent infinite loops
-            query = self.generate_semantic_scholar_query(topic)
+            if self.two_step_search_query:
+                query = self.generate_semantic_scholar_query_given_keywords(topic)
+            else:
+                query = self.generate_semantic_scholar_query(topic)
             query = self.clean_query(query)
 
             # Validate the query
@@ -80,6 +84,61 @@ class SemanticScholarQueryGenerator:
     **Instructions:**
     - Identify the main concepts in the topic.
     - For each concept, include up to **three** synonyms or related terms.
+    - Use Boolean operators to combine terms:
+        - Use **'+'** for **AND**.
+        - Use **'|'** for **OR**.
+        - Use **'-'** for **NOT**.
+    - Use quotation marks (**" "** ) for phrases.
+    - Use parentheses to group terms appropriately.
+    - Use wildcard (**'*'**) for word variations if appropriate.
+    - **Do not include any additional text, explanations, or notes.**
+    - **Provide ONLY the query, formatted correctly for the Semantic Scholar API, and nothing else.**
+    - **Enclose your query between the markers `<START_QUERY>` and `<END_QUERY>`. Failure to do so will result in an invalid query.**
+
+    **Example of a correct response:**
+
+    <START_QUERY>
+    ("term1" | "term1 synonym" | "term1 related term") + ("term2" | "term2 synonym")
+    <END_QUERY>
+
+    **Example of an incorrect response (do not do this):**
+
+    Here is your query:
+    <START_QUERY>
+    ("term1" | "term1 synonym") + ("term2" | "term2 synonym")
+    <END_QUERY>
+
+    Provide your query below:
+    """
+        response = self.llm.invoke(prompt)
+        content = self.extract_content(response)
+        query = self.extract_query_from_markers(content)
+        query = self.clean_query(query)
+        return query
+    
+    def generate_semantic_scholar_query_given_keywords(self, keywords: str, error=False) -> str:
+        """
+        Generates a Semantic Scholar query using the LLM.
+        """
+        error_message = "The previous query was invalid due to syntax errors or missing markers. Please follow the instructions carefully."
+
+        prompt = f"""You are an expert in creating Semantic Scholar search queries.
+
+    Generate a comprehensive search query for the following research topic:
+
+    Topic:
+    {keywords}
+
+    {error_message if error else ''}
+    
+    You are an expert in creating Semantic Scholar search queries.
+
+    Generate a comprehensive search query for the following research topic:
+
+    Topic:
+    {keywords}
+
+    **Instructions:**
     - Use Boolean operators to combine terms:
         - Use **'+'** for **AND**.
         - Use **'|'** for **OR**.
