@@ -5,16 +5,18 @@ from typing import Optional
 import requests
 
 class EmbaseQueryGenerator:
-    def __init__(self, api_key: str, llm=None):
+    def __init__(self, api_key: str, llm=None, two_step_search_query=False):
         """
         Initializes the EmbaseQueryGenerator.
 
         Parameters:
         - api_key (str): Your Elsevier Embase API key.
         - llm: An instance of the LLM for generating and improving queries.
+        - two_step_search_query (bool): Whether to use a two-step search query.
         """
         self.api_key = api_key
         self.llm = llm
+        self.two_step_search_query = two_step_search_query
         self.from_year = None
         self.to_year = None
         self.results = None
@@ -44,7 +46,10 @@ class EmbaseQueryGenerator:
         if not self.llm:
             raise ValueError("An LLM instance is required to generate the query.")
 
-        query = self.generate_embase_query(topic)
+        if self.two_step_search_query:
+            query = self.generate_embase_query_given_keywords(topic)
+        else:
+            query = self.generate_embase_query(topic)
 
         # Apply date filters if set
         if self.from_year or self.to_year:
@@ -73,6 +78,40 @@ class EmbaseQueryGenerator:
     6. Do not include any additional text, explanations, or notes.
     7. Provide ONLY the query, formatted correctly for Embase Command Language.
     8. Enclose your query between the markers <START_QUERY> and <END_QUERY>. Failure to do so will result in an invalid query.
+
+    Example:
+
+    <START_QUERY>
+    ('term1'/exp OR 'term1 synonym'/exp) AND ('term2'/exp OR 'term2 synonym'/exp)
+    <END_QUERY>
+
+    Provide your query below:
+    """
+
+        response = self.llm.invoke(prompt)
+        content = self.extract_content(response)
+        query = self.extract_query_from_markers(content)
+        query = self.clean_query(query)
+        return query
+
+    def generate_embase_query_given_keywords(self, keywords: str) -> str:
+        """
+        Generates an Embase Command Language query using the LLM.
+        """
+        prompt = f"""You are an expert in creating Embase Command Language search queries.
+
+    Generate a comprehensive Embase search query in Command Language syntax for the following topic:
+
+    Topic:
+    {keywords}
+
+    Requirements:
+    1. Use Emtree terms where appropriate, and include the appropriate field codes (e.g., '/de' for descriptors, '/exp' for exploded terms).
+    2. Use Boolean operators (AND, OR, NOT) to create effective query structures.
+    3. Balance specificity and sensitivity.
+    4. Do not include any additional text, explanations, or notes.
+    5. Provide ONLY the query, formatted correctly for Embase Command Language.
+    6. Enclose your query between the markers <START_QUERY> and <END_QUERY>. Failure to do so will result in an invalid query.
 
     Example:
 

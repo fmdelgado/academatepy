@@ -9,7 +9,7 @@ from functools import lru_cache
 
 
 class ScopusQueryGenerator:
-    def __init__(self, api_key: str, llm=None):
+    def __init__(self, api_key: str, llm=None, two_step_search_query=False):
         """
         Initializes the ScopusQueryGenerator.
 
@@ -19,6 +19,7 @@ class ScopusQueryGenerator:
         """
         self.api_key = api_key
         self.llm = llm
+        self.two_step_search_query = two_step_search_query
         self.from_year = None
         self.to_year = None
         self.results = None
@@ -49,7 +50,10 @@ class ScopusQueryGenerator:
         if not self.llm:
             raise ValueError("An LLM instance is required to generate the query.")
 
-        query = self.generate_scopus_query(topic)
+        if self.two_step_search_query:
+            query = self.generate_scopus_query_given_keywords(topic)
+        else:
+            query = self.generate_scopus_query(topic)
 
         # Apply date filters if set
         if self.from_year or self.to_year:
@@ -99,6 +103,39 @@ class ScopusQueryGenerator:
         query = self.clean_query(query)
         return query
 
+    def generate_scopus_query_given_keywords(self, keywords: str) -> str:
+        """
+        Generates a Scopus advanced search query using the LLM.
+        """
+        prompt = f"""You are an expert in creating Scopus advanced search queries.
+
+        Generate a comprehensive Scopus search query for the following research topic based on PICOS components:
+        {keywords}
+
+        Requirements:
+        1. Use valid Scopus field codes such as TITLE(), ABS(), KEY(), AUTH(), AFFIL(), SRCTITLE(), DOCTYPE(), LANGUAGE(), PUBYEAR().
+        2. Do not use invalid field codes or unsupported syntax like LIMIT-TO(), SUBJECT(), SUBFIELD(), or AUTH-KEY().
+        3. Use Boolean operators (AND, OR, AND NOT) to create effective query structures.
+        4. Balance specificity and sensitivity.
+        5. Do not include any additional text, explanations, or notes.
+        6. Provide ONLY the query, formatted correctly for Scopus advanced search.
+        7. Enclose your query between the markers <START_QUERY> and <END_QUERY>. Failure to do so will result in an invalid query.
+
+        Example:
+
+        <START_QUERY>
+        (TITLE-ABS-KEY("term1" OR "term1 synonym") AND TITLE-ABS-KEY("term2" OR "term2 synonym"))
+        <END_QUERY>
+
+        Provide your query below:
+        """
+
+        response = self.llm.invoke(prompt)
+        content = self.extract_content(response)
+        query = self.extract_query_from_markers(content)
+        query = self.clean_query(query)
+        return query
+    
     def extract_query_from_markers(self, content: str) -> str:
         """
         Extracts the query between the markers <START_QUERY> and <END_QUERY>.
@@ -205,7 +242,7 @@ class ScopusQueryGenerator:
             "query": query,
             "start": 0,
             "count": 25,  # Increased batch size
-            "view": "COMPLETE"
+            "view": "STANDARD" # View options: STANDARD, COMPLETE
         }
 
         self.logger.info(f"Executing async query: {query}")

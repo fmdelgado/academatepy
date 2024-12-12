@@ -3,10 +3,11 @@ import logging
 from typing import List, Optional
 
 import sys
-sys.path.append("/Users/fernando/Documents/Research/academatepy/app/research_module")
+sys.path.append("./research_module")
 from pubmed_querying import PubMedQueryGenerator
 from scopus_querying import ScopusQueryGenerator
 from sscholar_querying import SemanticScholarQueryGenerator
+from keywords_generation import KeywordsGenerator
 
 
 class UnifiedLiteratureSearcher:
@@ -18,7 +19,8 @@ class UnifiedLiteratureSearcher:
                  llm,
                  from_year: Optional[int] = None,
                  to_year: Optional[int] = None,
-                 scopus_max_results: int = 2000):
+                 scopus_max_results: int = 2000,
+                 two_step_search_queries: bool = False):
         """
         Initializes the UnifiedLiteratureSearcher with PubMed, Scopus, and Semantic Scholar API keys and an LLM instance.
 
@@ -31,6 +33,7 @@ class UnifiedLiteratureSearcher:
         - from_year (int): Start year for date filtering (optional).
         - to_year (int): End year for date filtering (optional).
         - scopus_max_results (int): Maximum number of Scopus results to fetch.
+        - two_step_search_queries (bool): Whether to use two-step search queries.
         """
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.INFO)
@@ -47,23 +50,27 @@ class UnifiedLiteratureSearcher:
         self.semantic_scholar_results = pd.DataFrame()
 
         self.scopus_max_results = scopus_max_results
+        self.two_step_search_queries = two_step_search_queries
+
+        if two_step_search_queries:
+            self.keywords_gen = KeywordsGenerator(llm)
 
         if pubmed_email and pubmed_api_key:
-            self.pubmed_query_gen = PubMedQueryGenerator(pubmed_email, pubmed_api_key, llm)
+            self.pubmed_query_gen = PubMedQueryGenerator(pubmed_email, pubmed_api_key, llm, two_step_search_queries)
             if from_year or to_year:
                 self.pubmed_query_gen.set_date_filter(from_year=from_year, to_year=to_year)
         else:
             self.logger.warning("PubMed API credentials not provided. PubMed access will not be available.")
 
         if scopus_api_key:
-            self.scopus_query_gen = ScopusQueryGenerator(scopus_api_key, llm)
+            self.scopus_query_gen = ScopusQueryGenerator(scopus_api_key, llm, two_step_search_queries)
             if from_year or to_year:
                 self.scopus_query_gen.set_date_filter(from_year=from_year, to_year=to_year)
         else:
             self.logger.warning("Scopus API key not provided. Scopus access will not be available.")
 
         if semantic_scholar_api_key:
-            self.semantic_scholar_query_gen = SemanticScholarQueryGenerator(semantic_scholar_api_key, llm)
+            self.semantic_scholar_query_gen = SemanticScholarQueryGenerator(semantic_scholar_api_key, llm, two_step_search_queries)
             if from_year or to_year:
                 self.semantic_scholar_query_gen.set_date_filter(from_year=from_year, to_year=to_year)
         else:
@@ -84,6 +91,18 @@ class UnifiedLiteratureSearcher:
         self.pubmed_results = pd.DataFrame()
         self.scopus_results = pd.DataFrame()
         self.semantic_scholar_results = pd.DataFrame()
+
+        # Generate keywords for the topic
+        if self.two_step_search_queries:
+            try:
+                self.logger.info("Generating keywords...")
+                print("logging keywords")
+                keywords = self.keywords_gen.generate_keywords(topic)
+                self.logger.info(f"Keywords: {keywords}")
+            except Exception as e:
+                self.logger.error(f"Error during keyword generation: {e}")
+                keywords = None
+            topic = keywords if keywords else topic
 
         # Generate and execute PubMed query if access is available
         if self.pubmed_query_gen:
