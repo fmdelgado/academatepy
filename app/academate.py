@@ -896,7 +896,7 @@ class academate:
         """
         Embeds a single PDF article with improved error handling and database management.
         """
-        uniqueid = str(pdf_record['uniqueid'])
+        uniqueid = str(pdf_record['uniqueid'])[:40]
         try:
             self.logger.debug(f"Starting embedding for article {uniqueid}")
 
@@ -930,7 +930,7 @@ class academate:
             metadata = {k: str(v) for k, v in pdf_record.to_dict().items()}
             for doc in documents:
                 doc.metadata.update(metadata)
-
+            ## CHANGE PDF COLLECTION NAME
             # Set up the Chroma database path
             path_name = f"{self.embeddings_path2}/pdf_{uniqueid}"
             await self.ensure_directory_permissions(path_name)
