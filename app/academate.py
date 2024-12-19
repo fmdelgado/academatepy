@@ -135,7 +135,6 @@ class academate:
         self.analysis_time = None
         self.db = None
 
-
     def check_and_remove_duplicates(self):
         """
         Checks for duplicate unique IDs in the DataFrame, warns the user,
@@ -171,12 +170,13 @@ class academate:
         normalized_description = ' '.join(normalized_description.split())
 
         key_string = f"{normalized_description}"
-        return hashlib.sha256(key_string.encode()).hexdigest()
+        id_record = hashlib.sha256(key_string.encode()).hexdigest()[:20]
+        return id_record
 
     # EMBEDDINGS
     def embed_literature_df(self, path_name=None):
         if path_name is None:
-            path_name = self.embeddings_path1
+            path_name = self.embeddings_path12
         else:
             os.makedirs(path_name, exist_ok=True)
         if self.verbose:
@@ -409,6 +409,9 @@ class academate:
         else:
             setattr(self, record2answer_attr, {})
 
+        # with open(record2answer_path, 'rb') as f:
+        #     screening2_record2answer = pickle.load(f)
+
         if os.path.exists(missing_records_path):
             with open(missing_records_path, 'rb') as file:
                 setattr(self, missing_records_attr, pickle.load(file))
@@ -490,7 +493,6 @@ class academate:
                 result = await chain.ainvoke(inputs)
 
                 if result:
-                    self.logger.debug(f"Assistant's response length for record {recnumber}: {len(result)} characters")
                     return recnumber, result
                 else:
                     self.logger.warning(f"Unexpected response format for record {recnumber}. Retrying...")
@@ -523,6 +525,7 @@ class academate:
 
         # Create semaphore in the async context
         sem = asyncio.Semaphore(5)
+        # recnumber = records_to_process[0]
 
         async def process_with_semaphore(recnumber):
             async with sem:
@@ -896,7 +899,7 @@ class academate:
         """
         Embeds a single PDF article with improved error handling and database management.
         """
-        uniqueid = str(pdf_record['uniqueid'])[:40]
+        uniqueid = str(pdf_record['uniqueid'])
         try:
             self.logger.debug(f"Starting embedding for article {uniqueid}")
 
@@ -1224,10 +1227,6 @@ class academate:
 
         # Merge the answers DataFrame with the article DataFrame
         merged_df = pd.merge(article_df, df_answers, on='uniqueid', how='right')
-
-        # **Sort the merged DataFrame by 'uniqueid'**
-        merged_df['uniqueid'] = merged_df['uniqueid'].astype(int)
-        merged_df.sort_values(by='uniqueid', inplace=True)
 
         # Reorder columns to group logically: uniqueid, title/record, then alternating label and reason
         base_cols = ['uniqueid']

@@ -1,16 +1,15 @@
 import pandas as pd
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_ollama import OllamaEmbeddings
 from langchain_ollama.chat_models import ChatOllama
 import requests, json
 from dotenv import load_dotenv
 import os
 import sys
-
 sys.path.append("/Users/fernando/Documents/Research/academatepy/app")
-from academate_new import academate
+from academate import academate
 import pickle
 
-# screen -S llm_AI_chroma_chatcosy_fixedparams python new_analysis_AI_fixedparams.py
+# screen -S test python run_academate.py
 
 dotenv_path = '/Users/fernando/Documents/Research/academatepy/.env'
 load_dotenv(dotenv_path)
@@ -40,9 +39,7 @@ with open("/Users/fernando/Documents/Research/academatepy/validation/ollama_mode
     ollama_models = pickle.load(f)
 # If you want to see what's in it
 
-ollama_models = ['llama3.2:1b',
-                 'llama3.2:latest',
-                 'mistral:v0.2']
+ollama_models = ['gemma2:27b']
 
 print(ollama_models)  # If it's a list/dict it will print directly
 # Authentication details
@@ -60,8 +57,7 @@ jwt = auth_response.json()["token"]
 headers = {"Authorization": "Bearer " + jwt}
 
 ollama_embeddings = OllamaEmbeddings(base_url=api_url, model="nomic-embed-text",
-                                     headers={"Authorization": "Bearer " + jwt})
-ollama_model= "mistral:v0.2"
+                                     client_kwargs={'headers': headers})
 
 
 for ollama_model in ollama_models:
@@ -79,44 +75,41 @@ for ollama_model in ollama_models:
     os.chmod(outdir, 0o777)  # Grant all permissions
     print(f"Set permissions for {outdir}")
 
-    try:
-        ollama_llm = ChatOllama(
-            base_url=api_url,
-            model=ollama_model,
-            temperature=0.0,
-            seed=28,
-            num_ctx=25000,
-            num_predict=-1,
-            top_k=100,
-            top_p=0.95,
-            format="json",
-            client_kwargs={'headers': headers})
+    ollama_llm = ChatOllama(
+        base_url=api_url,
+        model=ollama_model,
+        temperature=0.0,
+        seed=28,
+        num_ctx=25000,
+        num_predict=-1,
+        top_k=100,
+        top_p=1,
+        format="json",
+        client_kwargs={'headers': headers})
 
-        screening_ollama = academate(topic=None, llm=ollama_llm, embeddings=ollama_embeddings,
-                                     criteria_dict=criteria_dict, vector_store_path=outdir, literature_df=df,
-                                     content_column="Record", embeddings_path=f"{output_dir}/ollama_embeddings",
-                                     pdf_location=f"{output_dir}/pdfs", verbose=True, chunksize=25)
+    screening_ollama = academate(topic=None, llm=ollama_llm, embeddings=ollama_embeddings,
+                                 criteria_dict=criteria_dict, vector_store_path=outdir, literature_df=df,
+                                 content_column="Record", embeddings_path=f"{output_dir}/ollama_embeddings",
+                                 pdf_location=f"{output_dir}/pdfs", verbose=True, chunksize=25)
 
-        results_df = screening_ollama.run_screening1()
-        results_df.screening1.value_counts()
-        screening_ollama.generate_excel_report(screening_type='screening1')
+    results_df = screening_ollama.run_screening1()
+    screening_ollama.generate_excel_report(screening_type='screening1')
+    # results_df.to_pickle(f'{outdir}/results_screening1_newacademate.pkl')
+    results_df.to_json(f'{outdir}/results_screening1_academate.json', orient="records", indent=4)
 
-        results_df['predicted_screening1'] = results_df['screening1']
-        results_df['predicted_screening1'].value_counts()
-        results_df['pdf_path'] = "/Users/fernando/Documents/Research/academatepy/app/test/pdfs/" + results_df['pdf_name']
+    results_df['predicted_screening1'] = results_df['screening1']
+    results_df['predicted_screening1'].value_counts()
+    results_df['pdf_path'] = "/Users/fernando/Documents/Research/academatepy/app/test/pdfs/" + results_df['pdf_name']
 
-        screening_ollama.results_screeening1 = results_df
-        screening_ollama.results_screeening1['predicted_screening1'].value_counts()
-        # self = screening_ollama
-        results_df = screening_ollama.run_screening2()
-        screening_ollama.generate_excel_report(screening_type='screening2')
-        results_df.to_pickle(f'{outdir}/results_screening2.pkl')
+    screening_ollama.results_screeening1 = results_df
+    screening_ollama.results_screeening1['predicted_screening1'].value_counts()
+    # self = screening_ollama
+    results_df2 = screening_ollama.run_screening2()
+    screening_ollama.generate_excel_report(screening_type='screening2')
+    # results_df2.to_pickle(f'{outdir}/results_screening2_newacademate.pkl')
+    results_df2.to_json(f'{outdir}/results_screening2_academate.json', orient="records", indent=4)
+    prisma_fig = screening_ollama.create_PRISMA_visualization()
 
-        prisma_fig = screening_ollama.generate_prisma_flow_diagram()
-        prisma_fig.write_image(f"{outdir}/prisma_flow_diagram.png")
-        prisma_fig.write_image(f"{outdir}/prisma_flow_diagram.html")
-    except:
-        pass
 
 
 

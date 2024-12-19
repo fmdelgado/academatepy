@@ -1,0 +1,2604 @@
+
+
+
+
+
+
+<!-- check User Access Info View Option -->
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9F3B5VV3T3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-9F3B5VV3T3');
+</script>
+    <meta charset="utf-8">
+    <title>
+    
+ Methods for the Prediction of Protein-Ligand Binding Sites for Structure-Based Drug Design and Virtual Ligand Screening.
+
+            | Bentham Science
+    
+    </title>
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <!-- CSRF Token -->
+    
+    <meta content="nbhDppZwD2jh9EXfI9fLylGkI88Fcv7olmX5HfvE" name="csrf-token">
+    <!-- Scripts -->
+    
+      
+      <meta name="description" content="Structure Based Drug Design (SBDD) is a computational approach to lead discovery that uses the threedimensional structure of a protein to fit drug-like mol" />
+
+      <meta name="keywords" content=" Methods for the Prediction of Protein-Ligand Binding Sites for Structure-Based Drug Design and Virtual Ligand Screening.">
+
+      <meta property="og:type" content="website" />
+
+      <meta property="og:title" content=" Methods for the Prediction of Protein-Ligand Binding Sites for Structure-Based Drug Design and Virtual Ligand Screening." />
+
+      <meta property="og:url" content="https://www.eurekaselect.com/article/22102" />
+
+      <meta property="og:image" content="http://www.eurekaselect.com/images/bentham/CPPS-2020-B.jpg" />
+
+      <meta property="og:description" content="  Structure Based Drug Design (SBDD) is a computational approach to lead discovery that uses the threedimensional structure of a protein to fit drug-like molecules into a ligand binding site to modulate function. Identifying the location of the binding site is therefore a vital first step in this process, restricting the search space for SBDD or virtual screening studies. The detection and characterisation of functional sites on proteins has increasingly become an area of interest. Structural genomics projects are increasingly yielding protein structures with unknown functions and binding sites. Binding site prediction was pioneered by pocket detection, since the binding site is often found in the largest pocket. More recent methods involve phylogenetic analysis, identifying structural similarity with proteins of known function and identifying regions on the protein surface with a potential for high binding affinity. Binding site prediction has been used in several SBDD projects and has been incorporated into several docking tools. We discuss different methods of ligand binding site prediction, their strengths and weaknesses, and how they have been used in SBDD.          " />
+
+      <meta property="og:site_name" content="http://www.eurekaselect.com" />
+
+
+
+      <meta name="citation_title" content=" Methods for the Prediction of Protein-Ligand Binding Sites for Structure-Based Drug Design and Virtual Ligand Screening." />
+
+      
+      <meta name="citation_publish_on" content="2012-03-01 " />
+
+      <meta name="citation_journal_title" content="Current Protein & Peptide Science">
+
+      <meta name="citation_volume" content="7">
+
+      <meta name="citation_issue" content="5">
+
+      <meta name="citation_firstpage" content="395">
+
+      <meta name="citation_lastpage" content="406">
+
+      <meta name="citation_pdf_url" content="http://www.eurekaselect.com/article/22102">
+	  
+	  <meta name="citation_doi" content="10.2174/138920306778559386" />
+
+          <script defer="" src="https://www.eurekaselect.com/js/app.js"></script>    
+    <script type="text/javascript" src="https://www.eurekaselect.com/js/jquery.min.js"></script>
+    <!-- Fonts -->
+    <script src="https://www.eurekaselect.com/js/all.min.js"></script>
+    <!-- Styles -->
+    <!-- Bootstrap CSS -->
+    
+    <link href="https://www.eurekaselect.com/css/bootstrap.min.css"  rel="stylesheet">
+    <link href="https://www.eurekaselect.com/css/style.css" media="all" rel="stylesheet" type="text/css">
+    <link href="https://www.eurekaselect.com/plugins/animate-hover/hover-min.css" rel="stylesheet" type="text/css">
+    <link href="https://www.eurekaselect.com/plugins/wow-animate/animate.css" rel="stylesheet" type="text/css">    
+    <link href="https://www.eurekaselect.com/assets/vendors/select2/css/select2.min.css" rel="stylesheet" type="text/css">  
+    <link href="https://www.eurekaselect.com/assets/vendors/select2/css/select2-bootstrap.css" rel="stylesheet" type="text/css">  
+      
+    
+    
+
+
+<style type="text/css" id="slider-css">
+
+</style>
+
+<script src="/js/jquery-1.11.1.min.js"></script>
+
+
+
+
+
+<script type="text/javascript" src="https://platform-api.sharethis.com/js/sharethis.js#property=5f2d6cad2e6de20011ec6cd1&product=inline-share-buttons" async="async"></script>
+
+
+
+<link href="https://www.eurekaselect.com/css/imageviewer.css" rel="stylesheet" type="text/css" />
+
+
+
+<script src="https://www.eurekaselect.com/js/imageviewer.js"></script>
+
+                                        
+    </head>
+    <body>
+        <!----Header Section Starts---->        
+        <header  >
+              <div class="container">
+        <script src="https://www.recaptcha.net/recaptcha/api.js" async defer></script> 
+
+
+
+<div class="row flex justify-content-between align-items-center">
+
+          <div class="col-md-2"><a href="/"><img src="/images/logo.webp" alt="Eurekaselect logo" class="hvr-grow logo"></a></div>
+
+          <div class="col-md-5">
+
+            <a class="hidden-xs hidden-sm hor-banner" target="_blank" rel="noopener" href="https://bit.ly/41m0zYJ"><img alt="Bentham Newsletter" src="/images/bentham_newsletter.webp" title="newsletter banner"><span class="sr-only sr-only-focusable">newsletter banner</span></a>
+
+
+
+            <form class="search mt-md-2 mb-md-4" action="https://www.eurekaselect.com/search">
+
+            <div class="input-group">
+                                <input type="text" name="searchvalue" class="form-control" placeholder="Search here..." aria-label="Search anything here" aria-describedby="search-anything-here" autocomplete="off">
+              <div class="input-group-append">
+                                    <button name="search" type="submit" title="Search Button" id="search-anything-here"><i class="fas fa-search"><span class="sr-only sr-only-focusable">Search anything here</span></i></button>
+              </div>
+
+            </div>
+
+            </form>
+
+          </div>
+
+          <div class="col-lg-5 col-md-5 pt-md-4 top-links text-right">
+
+                        <!-- Authentication Links -->                        
+
+                        
+                                                        
+
+                            <a class="btn btn-link text-dark dropdown-toggle" href="#" id="login-wig" data-toggle="dropdown"><i class="far fa-user"></i> Login</a>
+
+                              <div class="dropdown-menu login-pop" id="login-wigs">
+
+                                <h5 class="text-center">Login</h5>
+
+                                    <hr>
+
+                                                                 
+
+                                 <form method="POST" action="https://www.eurekaselect.com/login" aria-label="Login">
+
+                                    <input type="hidden" name="_token" value="nbhDppZwD2jh9EXfI9fLylGkI88Fcv7olmX5HfvE">
+                                <div class="form-group">
+
+                                        <input id="identity" type="identity" class="font-14 form-control form-control-sm " name="identity" value=""  aria-label="enter user id" placeholder="E-Mail/User" required autofocus>
+
+
+
+                                        
+                                </div>
+
+
+
+                                <div class="form-group">
+
+                                    <input id="password" type="password" class="font-14 form-control form-control-sm " name="password" placeholder="Password"  aria-label="enter password" required>
+
+
+
+                                    
+                                </div>
+
+                                <div class="form-group mb-0">
+
+                                    <div class="captcha row">
+                                       <div class="col-md-6 text-center"> 
+                                            <span><img src="https://www.eurekaselect.com/captcha/default?owMqxQ0B" ></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group mb-4">
+                                        <input id="captcha" type="text" class="form-control" placeholder="Enter Captcha" aria-label="enter captcha" name="captcha">
+                                    </div>
+
+                                  
+                                </div>
+
+                                <div class="form-group">
+
+                                    <div class="custom-control custom-checkbox">
+
+                                      <input type="checkbox" class="custom-control-input form-check-input"  name="remember" id="remember" >
+
+                                      <label class="custom-control-label" for="remember">Remember Me</label>
+
+                                    </div>
+
+                                </div>
+
+                                <!--div class="form-group">
+
+                                    <div class="form-check">
+
+                                        <input class="form-check-input" type="checkbox" name="remember" id="remember" >
+
+
+
+                                        <label class="form-check-label" for="remember">
+
+                                            Remember Me
+
+                                        </label>
+
+                                    </div>
+
+                                </div-->
+
+
+
+
+
+
+
+                                <div class="form-group row mb-0">
+
+                                    <div class="col-md-12 mb-3">
+
+                                        <button type="submit" class="btn bg-primary-light text-white btn-sm btn-block">
+
+                                            Login
+
+                                        </button>
+
+                                    </div>
+
+                                    <div class="col-md-12">
+
+                                        <a href="https://www.eurekaselect.net/public/openathens/index.php" class="btn bg-primary-light text-white btn-sm btn-block">
+
+                                            OpenAthens Login
+
+                                        </a>
+
+                                    </div>
+
+                                </div>
+
+                                
+
+                                <div class="dropdown-divider"></div>
+
+                                <a class="dropdown-item px-0" href="https://www.eurekaselect.com/password/reset">
+
+                                    Forgot Your Password?</a>
+
+                                <a class="dropdown-item px-0"  href="https://www.eurekaselect.com/register">
+
+                                New around here? Sign up</a>
+
+                              </form>
+
+                              </div>
+
+                            <a class="btn btn-link text-dark" href="https://www.eurekaselect.com/register">
+
+                                <i class="fas fa-user-plus" aria-label="register link">
+
+                                </i>
+
+                                Register
+
+                            </a>
+
+                            
+                            <a class="btn btn-link text-dark" href="/cart">
+
+                                <i class="fas fa-shopping-cart" aria-label="cart link">
+
+                                </i>
+
+                                Cart                                
+
+                                <span class="badge badge-dark">
+
+                                    0
+
+                                </span>
+
+                            </a>
+
+                            
+
+                        
+          </div>
+
+        </div>
+
+         
+
+
+              </div>
+              <nav id="fixed-header" class="navbar navbar-expand-lg">
+            <div class="container">
+    <button class="navbar-toggler border-0" title="navigation" type="button" data-toggle="offcanvas">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="navbar-collapse offcanvas-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+            <li class="text-right">
+                <button class="navbar-toggler border-0" type="button" data-toggle="offcanvas" aria-label="close mobile navigation">
+                    <i class="fas fa-times"></i>
+                </button>
+            </li>
+            <li class="nav-item"> <a class="nav-link" href="/">Home</a> </li>
+            <li class="nav-item dropdown"> <a class="nav-link dropdown-toggle" href="#" id="navbarByDisease" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">About</a>
+                <div class="dropdown-menu" aria-labelledby="navbarByDisease">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h4 class="text-md-center">About</h4>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li><a href="/about-us">About Us</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li><a href="/pages/mission-statement-history">Mission Statement & History</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li><a href="/contact-us">Contact Us</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            <li class="nav-item dropdown"> <a class="nav-link dropdown-toggle" href="#" id="navbarPublications" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Publications </a>
+                <div class="dropdown-menu" aria-labelledby="navbarPublications">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h4 class="text-md-center">Journals</h4>
+                            <div class="row">
+                                <div class="col-md-4"> <img src="https://www.eurekaselect.com/assets/images/library.svg" alt="Journals"> </div>
+                                <div class="col-md-8">
+                                    <ul class="submenu-level1">
+                                        <li><a href="/bypublication">By Title</a></li>
+                                        <li><a href="/browse_by_subject">By Subject</a></li>
+                                        <!-- <li><a href="/sdg-journal">By SDGs</a></li> -->
+                                        <!-- <li><a href="/browse-by-pharmacy-collection">By Bentham Collection</a></li>
+                -->
+                                        <li><a href="/pages/patent-journals" target="_blank"  rel="noopener">Patent Journals</a></li>
+                                        <li><a href="/free-online-samples" target="_blank"  rel="noopener">Free Online Samples</a></li>
+                                        <li><a href="/journal-impacting-science" target="_blank"  rel="noopener">Journals Impacting Science</a></li>
+                                        <li><a href="/journals-catalog">Journals Catalog</a></li>
+                                        <li><a href="/pages/new-journals-2023" target="_blank"  rel="noopener">New Journals 2023</a></li>
+                                        <li><a href="/pages/new-journals-2024" target="_blank"  rel="noopener">New Journals 2024</a></li>
+                                        <li><a href="/subscriptions-pricing-ordering" target="_blank"  rel="noopener">Price and Ordering Information</a></li>
+                                        <li><a href="/journal-subscriptions/2023" class="">Subscription Rates 2023</a></li>
+                                        <li><a href="/journal-subscriptions/2024" class="">Subscription Rates 2024</a></li>
+                                                                                                                                                                <li><a href="/endorsements" class="">Endorsements</a></li>
+                                        <li><a href="/trial-requests" class="">Free Online Trials</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h4 class="text-md-center">Books</h4>
+                            <div class="row">
+                                <div class="col-md-4"> <img src="/images/studying.svg" alt="e-Books"> </div>
+                                <div class="col-md-8">
+                                    <ul class="submenu-level1">
+                                        <li><a href="/bybook">By Title</a></li>
+                                        <li><a href="/browse_by_ebook_subject">By Subject</a></li>
+                                        <!--    <li><a href="/sdg-ebook">By SDGs</a></li>  -->
+                                        <!--    <li><a href="/browse-by-ebook-collection">By Bentham Collection</a></li>
+
+                 -->
+                                        <li><a href="/bybook/series">By Series Books</a></li>
+                                        <li><a href="/bybook/general">By Text Books</a></li>
+                                        <li><a href="/bybook/open_access">By Open Access Books</a></li>
+                                        <li><a href="/bybook/video">By Video Books</a></li>
+                                        <li><a href="/books-catalog">Books Catalog</a></li>
+										<li><a href="/forthcoming/generalebook">Upcoming Books</a></li>
+										<li><a href="/book-trial-requests">EBook Trial</a></li>
+                                        <!--<li class="lister"><a data-toggle="collapse" href="#forthcoming" role="button" aria-expanded="false">Forthcoming <i class="fas fa-angle-right float-right"></i></a>
+                                            <div class="collapse" id="forthcoming">
+                                                <ul class="submenu-level2">
+                                                    <li><a href="/forthcoming/generalebook">Forthcoming Titles</a></li>
+                                                    <li><a href="/forthcoming/series">Forthcoming Series</a></li>
+                                                </ul>
+                                            </div>
+                                        </li>
+                                        <li class="lister"><a data-toggle="collapse" href="#future-a" role="button" aria-expanded="false">Future Attraction <i class="fas fa-angle-right float-right"></i> </a>
+                                            <div class="collapse" id="future-a">
+                                                <ul class="submenu-level2">
+                                                    <li><a href="https://benthambooks.com/future-books-by-subject/business-and-economics-and-finance-and-accounting/">Future Titles</a></li>
+                                                    <li><a href="https://benthambooks.com/future-series-by-subject/business-and-economics-and-finance-and-accounting/">Future Series</a></li>
+                                                </ul>
+                                            </div>
+											</li>-->
+                                                                                                                                                            </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </li>
+			<li class="nav-item dropdown"> <a class="nav-link dropdown-toggle" href="#" id="navbarCallForPapers" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Publish with us</a>
+                <div class="dropdown-menu" aria-labelledby="navbarCallForPapers">
+                    <h4 class="text-center">Call for Papers</h4>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="border-bottom pb-2">Submission for General Articles</h5>
+                            <ul class="submenu-level1">
+                                <li><a href="https://www.eurekaselect.com/browse_by_subject/callforpaper" target="_blank">Submit Abstract</a></li>
+                                <li><a href="https://www.eurekaselect.com/browse_by_subject/callforpaper" target="_blank">Submit Manuscript</a></li>
+                                <!-- <li><a href="https://bentham.manuscriptpoint.com/journals">Animated Abstract Submission</a></li> -->
+								<li><a href="https://www.eurekaselect.com/journalfinder" target="_blank">Journal Finder</a></li>
+                            </ul>
+                        </div>                        
+                        <div class="col-md-6">
+                            <h5 class="border-bottom pb-2">Submit to Thematic Issues</h5>
+                            <ul class="submenu-level1">
+                                <li><a href="https://www.eurekaselect.com/call-for-papers" rel="noopener">Submit Manuscript to Thematic Issues</a></li>
+								<li><a href="https://www.eurekaselect.com/browse_by_subject/callforpaper" rel="noopener">Submit Thematic Issue Proposal</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            
+            <!-- <li class="nav-item"><a class="nav-link" href="/read-publish">Read and Publish</a></li> -->
+            <!--li class="nav-item dropdown"> <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Bentham Online </a>
+
+
+
+          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+
+
+
+            <div class="row">
+
+
+
+              <div class="col-md-12">
+
+
+
+                <h4  class="text-md-center">Bentham Online</h4>
+
+
+
+              </div>
+
+
+
+              <div class="col-md-4">
+
+
+
+                <ul class="submenu-level1">
+
+
+
+                  <li><a href="https://benthamsciencepublishers.wordpress.com/" target="_blank">Bentham Insight</a></li>                  
+
+
+
+                  <li><a href="/bypublication" target="_blank">Purchase Articles</a></li>
+
+
+
+                  <li><a href="/search" target="_blank">Search Articles</a></li>
+
+
+
+                </ul>
+
+
+
+              </div>
+
+
+
+              <div class="col-md-4">
+
+
+
+                <ul class="submenu-level1">
+
+
+
+                  
+
+                  <li><a href="https://bentham.manuscriptpoint.com/" target="_blank"> Submit Manuscripts </a></li>
+
+
+
+                </ul>
+
+
+
+              </div>
+
+
+
+            </div>
+
+
+
+          </div>
+
+
+
+        </li-->
+            <li class="nav-item dropdown"> <a class="nav-link dropdown-toggle" href="#" id="navbarMarketingOpp" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Marketing Opportunities</a>
+                <div class="dropdown-menu" aria-labelledby="navbarMarketingOpp">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h4 class="text-md-center">Marketing Opportunities</h4>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li class="lister"><a data-toggle="collapse" href="#advertising" role="button" aria-expanded="false">Advertising<i class="fas fa-angle-right float-right"></i></a>
+                                    <div class="collapse" id="advertising">
+                                        <ul class="submenu-level2">
+                                            <li><a href="/advertise-with-us" id="advertisewithus">Advertise with us</a></li>
+                                            <li><a href="/advertising-policy"  target="_blank"  rel="noopener">Advertising Policy</a></li>
+                                            <li><a href="/books-catalog">Books Catalog</a></li>
+                                            <li><a href="/journals-catalog">Journals Catalog</a></li>
+                                            <li><a href="/images/pdf/Media-Pack-2023.pdf" id="mediapack2022" target="_blank"  rel="noopener">Media Pack 2023</a></li>
+                                        </ul>
+                                    </div>
+                                </li>
+                                <li><a href="/media-partners">Media Partners</a></li>
+                                <li><a href="/pages/partnering-events-All">Partnering Events</a></li>
+                                <li><a href="/pages/institutional-members">Member Institutions and Societies</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li class="lister"><a data-toggle="collapse" href="#eventsbyregion" role="button" aria-expanded="false">Events By Year<i class="fas fa-angle-right float-right"></i></a>
+                                    <div class="collapse" id="eventsbyregion">
+                                        <ul class="submenu-level2">
+                                            <li><a href="/pages/partnering-events-2023">2023</a></li>    
+                                        </ul>
+                                    </div>
+                                </li>
+                                <li class="lister"><a data-toggle="collapse" href="#eventssubject" role="button" aria-expanded="false">Events By Subject Areas<i class="fas fa-angle-right float-right"></i></a>
+                                    <div class="collapse" id="eventssubject">
+                                        <ul class="submenu-level2">
+                                            <li><a href="/pages/partnering-events-bussiness" target="_blank"  rel="noopener">Business, Economics and Finance</a></li>
+                                            <li><a href="/pages/partnering-events-EnergyScience" target="_blank"  rel="noopener">Energy Science, Engineering and Technology</a></li>
+                                            <li><a href="/pages/partnering-events-FoodScience" target="_blank"  rel="noopener">Food Science and Nutrition</a></li>
+                                            <li><a href="/pages/partnering-events-GeneticsGenomics" target="_blank"  rel="noopener">Genetics & Genomics</a></li>
+                                            <li><a href="/pages/partnering-events-Microbiology" target="_blank"  rel="noopener">Microbiology</a></li>
+                                            <li><a href="/pages/partnering-events-ProteinPeptide" target="_blank"  rel="noopener">Protein and Peptide Sciences</a></li>
+                                            <li><a href="/pages/partnering-events-CeramicsGlass" target="_blank"  rel="noopener">Ceramics, Glass, Composites and Hybrid Materials</a></li>
+                                            <li><a href="/pages/partnering-events-SurfacesInterfaces" target="_blank"  rel="noopener">Surfaces, Interfaces, Thin Films, Corrosion, Coatings</a></li>
+                                            <li><a href="/pages/partnering-events-Anesthesiology" target="_blank"  rel="noopener">Anesthesiology</a></li>
+                                            <li><a href="/pages/partnering-events-AntiInfectives" target="_blank"  rel="noopener">Anti-Infectives and Infectious Diseases</a></li>
+                                            <li><a href="/pages/partnering-events-Biomarkers" target="_blank"  rel="noopener">Biomarkers</a></li>
+                                            <li><a href="/pages/partnering-events-Cardiology" target="_blank"  rel="noopener">Cardiology</a></li>
+                                            <li><a href="/pages/partnering-events-Dermatology" target="_blank"  rel="noopener">Dermatology</a></li>
+                                            <li><a href="/pages/partnering-events-ImmunologyInflammation" target="_blank"  rel="noopener">Immunology, Inflammation and Allergy</a></li>
+                                            <li><a href="/pages/partnering-events-Oncology" target="_blank"  rel="noopener">Oncology</a></li>
+                                            <li><a href="/pages/partnering-events-Ophthalmology" target="_blank"  rel="noopener">Ophthalmology</a></li>
+                                            <li><a href="/pages/partnering-events-Pediatrics" target="_blank"  rel="noopener">Pediatrics</a></li>
+                                            <li><a href="/pages/partnering-events-Psychiatry" target="_blank"  rel="noopener">Psychiatry</a></li>
+                                            <li><a href="/pages/partnering-events-RegenerativeMedicine" target="_blank"  rel="noopener">Regenerative Medicine</a></li>
+                                            <li><a href="/pages/partnering-events-Surgery" target="_blank"  rel="noopener">Surgery</a></li>
+                                            <li><a href="/pages/partnering-events-General" target="_blank"  rel="noopener">General</a></li>
+                                            <li><a href="/pages/partnering-events-Neuroscience" target="_blank"  rel="noopener">Neuroscience</a></li>
+                                            <li><a href="/pages/partnering-events-Pharmacology" target="_blank"  rel="noopener">Pharmacology</a></li>
+                                        </ul>
+                                    </div>
+                                </li>
+                                <li><a href="/pages/exhibit-schedule" target="_blank"  rel="noopener">Exhibit Schedule</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li><a href="/promotional-services" target="_blank"  rel="noopener">Promotional Services</a></li>
+                                <li><a href="/corporate-sales" target="_blank"  rel="noopener">Resources for Corporates</a></li>
+                                <li><a href="/kudos" target="_blank"  rel="noopener">Kudos</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </li>
+
+             <li class="nav-item dropdown"> <a class="nav-link dropdown-toggle" href="#" id="navbarByDisease" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> Articles by Disease </a>
+                <div class="dropdown-menu" aria-labelledby="navbarByDisease">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h4 class="text-md-center">Articles By Disease </h4>
+                        </div>
+                        <div class="col-md-8">
+                            <p>Bentham is offering subject-based scholarly content collections which are tailored to meet specific research needs. Researchers can access related articles from current and back volumes by purchasing access to these collections. Subscribers will also have access to new articles as soon as they are published and added to these collections. With new articles being added to these collections on a daily basis, the collections serve as an ideal tool to keep researchers updated with new developments in the respective fields. </p>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li><a href="/alldiseases/295/anti%20inflammatory">Anti Inflammatory</a></li>
+                                <li><a href="/alldiseases/258/cardiovascular%20disorders">Cardiovascular Disorders</a></li>
+                                <li><a href="/alldiseases/281/neurological%20disorders">Neurological Disorders</a></li>
+                                <li><a href="/alldiseases/283/diabetes">Diabetes</a></li>
+                                <li><a href="/alldiseases/16/oncology">Oncology</a></li>
+                                <li><a href="/alldiseases/622/coronavirus">Coronavirus</a></li>
+                            </ul>
+                            <a href="/alldiseases" class="btn btn-outline-light ml-4 px-5 mt-2">View All</a>
+                        </div>
+                    </div>
+                </div>
+            </li>
+
+            <li class="nav-item dropdown"> <a class="nav-link dropdown-toggle" href="#" id="navbarLibrarians" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">For Librarians</a>
+                <div class="dropdown-menu" aria-labelledby="navbarLibrarians">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h4 class="text-md-center">For Librarians</h4>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li><a href="/faq-reprint">FAQs for e-prints/reprints</a></li>
+                                <li><a href="/images/pdf/JournalCatalog2024.pdf" target="_blank" rel="noopener">Journal Catalog 2024</a></li>
+                                <li><a href="/images/pdf/JournalCatalog2023.pdf" class="" id="JournalCatalog2023" target="_blank" rel="noopener">Journal Catalog 2023</a></li>
+                                <li><a href="https://benthamalerts.com/" target="_blank"  rel="noopener">Table of Content Alerts</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li><a href="/library-recommendation">Library Recommendation </a></li>
+                                <li><a href="/trial-requests"> Trial Requests </a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li><a href="/order/reprint"> Order Bulk Reprints </a></li>
+                                <li><a href="/order/eprint"> Order Bulk ePrints </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            <li class="nav-item dropdown"> <a class="nav-link dropdown-toggle" href="#" id="navbarddAE" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> For Authors & Editors </a>
+                <div class="dropdown-menu" aria-labelledby="navbarddAE">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h4 class="text-md-center">For Authors & Editors</h4>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li><a href="/mps/index.html" target="_blank"  rel="noopener">Manuscript Processing System</a></li>
+                                <li><a href="/processing-cycle" target="_blank" rel="noopener">Publication Cycle - Process Flowchart</a></li>                                
+                                <li><a href="/pages/manuscript-transfer-facility" target="_blank" rel="noopener">Manuscript Transfer Facility</a></li>
+                                <li><a href="/pages/authorship">Authorship </a></li>
+                                <li><a href="/pages/author-benefits" target="_blank"  rel="noopener">Author Benefits</a></li>
+                                <li><a href="/increase-visibility-article">Increase Visibility Of Your Article </a></li>
+                                <li><a href="/language-editing" target="_blank"  rel="noopener">Copyediting Services</a></li>
+                                <li><a href="/pages/general-faqs" target="_blank" rel="noopener">General FAQs</a></li>
+								<li><a href="/open-access-plus" target="_blank" rel="noopener">Open Access Policy</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li><a href="/pages/editorial-policies-main" target="_blank"  rel="noopener">Editorial Polices</a></li>
+                                <li><a href="/pages/rights-permissions" target="_blank" rel="noopener">Rights & Permissions</a></li>
+                                <li><a href="/self-archiving-policies">Archiving Policies </a></li>
+                                <li><a href="/pages/publishing-ethics" target="_blank" rel="noopener">Publishing Ethics and Rectitude </a></li>
+                                <li><a href="/pages/conflict-of-interest" target="_blank" rel="noopener">Conflict Of Interest</a></li>
+                                <li><a href="/fabricating-stating-false-information" target="_blank"  rel="noopener">Fabricating and Stating False Information</a></li>
+                                <li><a href="/research-misconduct" target="_blank" rel="noopener">Research Misconduct</a></li>
+								<li><a href="/pages/editorial-management" target="_blank" rel="noopener">Editorial Management</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                            <li><a href="/pages/author-guidelines" target="_blank">Guidelines for Authors</a></li>    
+                            <li><a href="/pages/short-guide" target="_blank" rel="noopener">Ethical Guidelines for New Editors</a></li>
+                                <li><a href="/pages/guest-editors-guidelines">Guidelines for Guest Editors</a></li>
+                                <li><a href="/reviewers-guidelines">Reviewer Guidelines </a></li>
+                                <li><a href="/pages/peer-reviews" target="_blank" rel="noopener">Peer Review Workflow</a></li>
+                                <li><a href="/webinars">Webinars for Authors, Editors and Reviewers</a></li>
+                                <li><a href="/allegations-from-whistleblowers">Allegations From Whistleblowers</a></li>
+                                <li><a href="/kudos" target="_blank"  rel="noopener">Kudos</a></li>
+                                <li><a href="https://benthamalerts.com/">Table of Contents Alert </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </li>
+            <li class="nav-item dropdown"> <a class="nav-link dropdown-toggle" href="#" id="navbarddMore" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> More </a>
+                <div class="dropdown-menu" aria-labelledby="navbarddMore">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li><a href="/order-subscription">Ordering &amp; Subscription</a></li>
+                                <li><a href="/pages/advisory-board">Bentham Advisory Board</a></li>
+                                <li><a href="/feedback">Feedback</a></li>
+                                
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li><a href="/help">Help</a></li>
+                                <li><a href="/pages/author-reprints">Author Reprints </a></li>
+                                <li><a href="https://www.eurekaselect.com/indexing-agencies">Abstracting & Indexing Agencies for Journals</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-md-4">
+                            <ul class="submenu-level1">
+                                <li><a href="https://www.eurekaselect.com/press-release">Press Releases </a></li>
+                                <li><a href="/ebook-news">Books News </a></li>
+                                <li><a href="https://www.eurekaselect.com/indexing-agencies-books">Abstracting & Indexing Agencies for Books</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>          </nav>
+        </header>
+        
+
+
+<!----Banner Section Starts---->
+
+<section id="article-banner">
+
+  <div class="container">
+
+    <div class="row">
+
+      <div id="side-a" class="col-md-5">
+
+        <div class="row">
+
+          <div class="col-12">
+
+            <div class="media">
+
+              <a href="/journal/42/current-issue">
+
+                
+                <img class="mr-3 img-thumbnail" src="/images/bentham/CPPS-2020-B.jpg" alt="Generic placeholder image">
+
+                
+              </a>
+
+              <div class="media-body">
+                <h2 class="pr-lg-3">
+                                    Current Protein &amp; Peptide Science
+                  
+                </h2>
+                <a tabindex="0" class="btn btn-outline-light btn-sm mb-3" role="button" data-toggle="popover" data-html="true" data-trigger="hover" data-content="<p><b>Editor-in-Chief:<br></b><b>Ben M. Dunn</b><br>Department of Biochemistry and Molecular Biology<br>University of Florida, College of Medicine<br>P.O. Box 100245, Gainesville<br>Florida<br>FL<br>United States<br></p>">Editor-in-Chief <i class="fas fa-angle-double-right"></i></a>
+                                <p>ISSN (Print): 1389-2037
+                  
+                  <br>
+
+                  ISSN (Online): 1875-5550
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="col-md-12 mt-3">
+
+            <a href="https://www.eurekaselect.com" class="btn btn-outline-light btn-sm">Back</a>
+
+            <div class="dropdown d-inline">
+
+              <button class="btn btn-light btn-sm dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+
+                Journal
+
+              </button>
+
+              <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+
+                <a class="dropdown-item" href="https://www.eurekaselect.com/journal/42">Journal Home</a>
+
+                <a class="dropdown-item" href="/journal/42/about-journal">About Journal</a>
+
+                <a class="dropdown-item" href="/journal/42/editorial-board">Editorial Board</a>
+
+                
+                <a class="dropdown-item" href="http://www.currentproteinpeptidescience.com/" target="_blank">Journal Insight</a>
+
+                
+                <a class="dropdown-item" href="/journal/42/current-issue">Current Issue </a>
+
+                <a class="dropdown-item" href="https://www.eurekaselect.com/journal/42">Volumes/Issues</a>
+
+              </div>
+
+            </div>
+            <a href="https://www.eurekaselect.com/subscribe-to-this-journal/42" class="btn btn-light btn-sm">Subscribe</a>
+                      </div>
+
+        </div>
+
+      </div>
+
+      <div id="side-b" class="col-md-7">
+
+        
+        <span class="badge badge-pill badge-info mb-2"></span>
+
+        
+        
+                <h1> Methods for the Prediction of Protein-Ligand Binding Sites for Structure-Based Drug Design and Virtual Ligand Screening.</h1>
+        
+        
+
+
+
+
+
+        
+
+                </span>
+
+        <div class="row">
+
+          <div class="col-md-8">
+		  
+		    
+                        
+            <p>Volume 7, Issue 5, 2006 </p>
+
+            
+            
+            
+            <!-- 1== Epub articles and 4== Epub Abtract article
+
+                     We donot have page number in Epub and Epub Abstract section articles
+
+                -->
+
+            								<p><strong>Page:</strong> [395 - 406] <span class="float-right"><strong>Pages:</strong> 12 </span></p>
+				                        
+            <p><strong>DOI:</strong> <a href="http://dx.doi.org/10.2174/138920306778559386" class="btn-link">10.2174/138920306778559386</a></p>
+
+            
+            <p><strong>Price:</strong> $65</a></p>
+
+            
+              
+              
+          </div>
+
+
+
+
+
+          
+            
+              <form method="POST" action="https://www.eurekaselect.com/cart" accept-charset="UTF-8" id="addtocartForm"><input name="_token" type="hidden" value="nbhDppZwD2jh9EXfI9fLylGkI88Fcv7olmX5HfvE">
+
+
+
+              <input type="hidden" name="param" value="eyJpdiI6InR0RTNCSzB0dUNCOUFRWFVHSG1Oanc9PSIsInZhbHVlIjoiNnNrbnpYNWVVWVBWUHppdTlOYi92dz09IiwibWFjIjoiMWYwODY5M2JhYTIyNmY5Y2NkMTM1YTExMDExZTFiYTZlYTAwYzFhNjg0NjI2NTg4Y2U3OWEzYmU2NWJmOTQ1YiIsInRhZyI6IiJ9">
+
+              <div class="col-md-4 text-right">
+
+                <button type="submit" id="addcartbtn" class="btn btn-download hvr-icon-hang">Purchase<br>PDF<br><i class="fas fa-cart-plus hvr-icon"></i></button>
+
+              </div>
+
+              </form>
+
+              
+
+
+
+
+              
+
+
+
+
+              
+
+
+            </div>
+
+
+
+        </div>
+
+      </div>
+
+    </div>
+
+</section>
+
+
+
+<!----Banner Section Ends---->
+
+
+
+<!----Main Section Starts (where all content bodies exist)---->
+
+<main id="article">
+
+
+
+  <section>
+
+    <div class="container">
+
+
+
+
+
+
+
+      
+
+
+
+
+      
+
+
+      
+      <div class="row">
+
+        <div class="col-md-8">
+
+
+
+          <!----Top Banner Section Starts---->
+
+          <div class="row text-center mb-4 ebm-banners">
+      <div class="col-md-3 pr-md-0 mb-2 mb-md-0">
+        <a href="/journal/42/become_ebm_form"><img src="/images/ebm.png" class="img-thumbnail"></a>
+      </div>
+      <div class="col-md-3 pr-md-0 mb-2 mb-md-0">
+        <a href="/journal/42/become_reviewer_form"><img src="/images/reviewer.png" class="img-thumbnail"></a>
+      </div>	  	  
+	  <div class="col-md-3 pr-md-0 mb-2 mb-md-0">        
+		<a href="/journal/42/become_editor_form"><img src="/images/editors.png" class="img-thumbnail"></a> </div>
+      <div class="col-md-3 mb-2 mb-md-0">
+        <a href="/journal/42/become-a-section-editor"><img src="/images/section-editor.png" class="img-thumbnail"></a>
+      </div>
+  </div>
+     
+
+
+          <!----End---->
+		
+          
+          
+          <div id="abstract" class="card bigbox-hvr-slow">
+
+            
+            <div class="card-header">
+
+              <h5>Abstract</h5>
+
+            </div>
+
+            
+            <div class="card-body">
+
+              <p class="text-justify">
+                                  Structure Based Drug Design (SBDD) is a computational approach to lead discovery that uses the threedimensional structure of a protein to fit drug-like molecules into a ligand binding site to modulate function. Identifying the location of the binding site is therefore a vital first step in this process, restricting the search space for SBDD or virtual screening studies. The detection and characterisation of functional sites on proteins has increasingly become an area of interest. Structural genomics projects are increasingly yielding protein structures with unknown functions and binding sites. Binding site prediction was pioneered by pocket detection, since the binding site is often found in the largest pocket. More recent methods involve phylogenetic analysis, identifying structural similarity with proteins of known function and identifying regions on the protein surface with a potential for high binding affinity. Binding site prediction has been used in several SBDD projects and has been incorporated into several docking tools. We discuss different methods of ligand binding site prediction, their strengths and weaknesses, and how they have been used in SBDD.          
+                
+
+              </p>
+
+              
+              <p><strong>Keywords: </strong>
+                                <a target="_blank" class="btn-link" href="https://www.eurekaselect.com/search?searchvalue=probe">probe</a>, <a target="_blank" class="btn-link" href="https://www.eurekaselect.com/search?searchvalue=Protein pocket detection">Protein pocket detection</a>, <a target="_blank" class="btn-link" href="https://www.eurekaselect.com/search?searchvalue=LIGSITE method">LIGSITE method</a>, <a target="_blank" class="btn-link" href="https://www.eurekaselect.com/search?searchvalue=Docking tools">Docking tools</a>, <a target="_blank" class="btn-link" href="https://www.eurekaselect.com/search?searchvalue=CATH domains">CATH domains</a>, <a target="_blank" class="btn-link" href="https://www.eurekaselect.com/search?searchvalue=Pocketome">Pocketome</a>
+                
+
+              </p>
+
+              
+
+
+              
+
+
+              
+
+
+            </div>
+
+
+
+
+
+          </div>
+
+          
+                    <div class="card-body">
+                        <a href="https://www.eurekaselect.com/article/22101" class="float-left btn btn-primary btn-sm active" data-mdb-toggle="button" autocomplete="off" aria-pressed="true">&laquo; Previous</a>
+            
+                        <a href="https://www.eurekaselect.com/article/22103" class="float-right btn btn-primary btn-sm active" data-mdb-toggle="button" autocomplete="off" aria-pressed="true">Next &raquo;</a>
+                      </div>
+          
+          
+
+
+          
+
+
+          
+          
+
+
+
+
+          <br>
+
+          <!-- Example single danger button -->
+
+          <div class="row mx-0">
+
+            <div class="col-lg-auto download-bar text-sm-center p-2 mr-md-3 bg-siteblue rounded">
+
+              
+              
+              
+              
+              <div class="btn-group">
+
+                
+                <form method="POST" action="https://www.eurekaselect.com/marklist" accept-charset="UTF-8" id="markItemForm"><input name="_token" type="hidden" value="nbhDppZwD2jh9EXfI9fLylGkI88Fcv7olmX5HfvE">
+
+                <input type="hidden" name="param" value="eyJpdiI6IkplRlgvQitHbzdtNmVpM3Q1VGJBSGc9PSIsInZhbHVlIjoiRlBGY1Q3c0V4WXhvdE13ZXRvSkp2dz09IiwibWFjIjoiZGMyNmExZGEzNjM0YjAyZmRmOTVjNDY2MWJiYjAwZjdmZWRkMjJkYWY0NjhiZjE1NDllZDk2ZDVmMmI3OGVkMyIsInRhZyI6IiJ9">
+
+                <input type="hidden" name="itemtype" value="1">
+
+                <button type="submit" id="markitembtn" class="btn btn-light bg-white btn-sm">Mark Item</button>
+
+                </form>
+
+
+
+                
+              </div>
+
+
+
+              <div class="btn-group">
+
+                <form method="POST" action="https://www.eurekaselect.com/cart" accept-charset="UTF-8" id="addtocartForm"><input name="_token" type="hidden" value="nbhDppZwD2jh9EXfI9fLylGkI88Fcv7olmX5HfvE">
+
+                <input type="hidden" name="param" value="eyJpdiI6IjZnL1g5S2dxaFFWR2pQREpLa0JOY0E9PSIsInZhbHVlIjoiOFBsOWQxZ3hzVWQ1M00zN09mNkllZz09IiwibWFjIjoiNzFlZmZiMjdiY2I4ZTRlYTcyNmFiNTAwZjkzYjcxYzNmMTQwMGJlOWU1ODQzMjVjZmQ5NWNjNmNlYThlNmMwOCIsInRhZyI6IiJ9">
+
+                <button type="submit" id="addcartbtn" class="btn btn-light bg-white btn-sm">Purchase PDF</button>
+
+                </form>
+
+              </div>
+
+
+
+              
+              
+              
+              
+              
+
+
+
+
+
+
+
+
+              <a class="btn btn-light bg-white btn-sm" href="javascript:void(0);" id="RightsLinkPopUp">Rights & Permissions</a>
+
+              <a class="btn btn-light bg-white btn-sm" href="javascript:void(0);" data-toggle="modal" data-target="#PrintWindow">Print</a>
+
+              <a class="btn btn-light bg-white btn-sm" href="javascript:void(0);" data-toggle="modal" data-target="#ExportWindow">Cite</a>
+
+              <!-- <a class="btn btn-light bg-white btn-sm" href="javascript:void(0);" data-toggle="modal" data-target="#CiteWindow">Cite as</a> -->
+
+
+
+            </div>
+
+            <!-- Print Window Start-->
+
+            <div class="modal fade" id="PrintWindow" role="dialog">
+
+              <div class="modal-dialog modal-lg">
+
+                <div class="modal-content">
+
+                  <div class="modal-header">
+
+                    <h4 class="modal-title" id="modalLabelprimary">Current Protein & Peptide Science</h4>
+
+                  </div>
+
+                  <div class="modal-body ">
+
+                    <p><strong>Title:</strong> Methods for the Prediction of Protein-Ligand Binding Sites for Structure-Based Drug Design and Virtual Ligand Screening.</p>
+
+                    <p><strong>Volume:</strong> 7
+
+                                                                  <strong>Issue:</strong> 5                     </p>
+                    
+                                        
+                    
+                    <p><strong>Keywords:</strong>
+                                            <a target="_blank" class="btn-link" href="https://www.eurekaselect.com/search?searchvalue=probe">probe</a>, <a target="_blank" class="btn-link" href="https://www.eurekaselect.com/search?searchvalue=Protein pocket detection">Protein pocket detection</a>, <a target="_blank" class="btn-link" href="https://www.eurekaselect.com/search?searchvalue=LIGSITE method">LIGSITE method</a>, <a target="_blank" class="btn-link" href="https://www.eurekaselect.com/search?searchvalue=Docking tools">Docking tools</a>, <a target="_blank" class="btn-link" href="https://www.eurekaselect.com/search?searchvalue=CATH domains">CATH domains</a>, <a target="_blank" class="btn-link" href="https://www.eurekaselect.com/search?searchvalue=Pocketome">Pocketome</a>
+                                          </p>
+
+                    
+                    
+                    <p><strong>Abstract:</strong>   Structure Based Drug Design (SBDD) is a computational approach to lead discovery that uses the threedimensional structure of a protein to fit drug-like molecules into a ligand binding site to modulate function. Identifying the location of the binding site is therefore a vital first step in this process, restricting the search space for SBDD or virtual screening studies. The detection and characterisation of functional sites on proteins has increasingly become an area of interest. Structural genomics projects are increasingly yielding protein structures with unknown functions and binding sites. Binding site prediction was pioneered by pocket detection, since the binding site is often found in the largest pocket. More recent methods involve phylogenetic analysis, identifying structural similarity with proteins of known function and identifying regions on the protein surface with a potential for high binding affinity. Binding site prediction has been used in several SBDD projects and has been incorporated into several docking tools. We discuss different methods of ligand binding site prediction, their strengths and weaknesses, and how they have been used in SBDD.          </p>
+
+                    
+                  </div>
+
+                  <div class="modal-footer">
+
+                    <button type="button" class="btn btn-outline-dark" data-dismiss="modal">Close</button>
+
+                    <button type="button" class="btn btn-outline-primary" data-dismiss="modal" onclick="SendForPrint()">Print this page</button>
+
+                  </div>
+
+                </div>
+
+
+
+              </div>
+
+            </div>
+
+            <!-- Print Window End-->
+
+
+
+            <!-- Export Window Start-->
+
+            <div class="modal fade" id="ExportWindow" role="dialog">
+
+              <div class="modal-dialog">
+
+                <div class="modal-content">
+
+                  <div class="modal-header">
+
+                    <h4 class="modal-title">Export Options</h4>
+
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+
+                  </div>
+
+                  <div class="modal-body">
+
+                    <form method="post" action="https://www.eurekaselect.com/citation" enctype="multipart/form-data" accept-charset="UTF-8" id="export-citation-form">
+    <input type="hidden" name="_token" value="nbhDppZwD2jh9EXfI9fLylGkI88Fcv7olmX5HfvE">
+   <input type="hidden" name="article_id" value="22102">
+
+    <div class="form-group">        
+            <label><strong>Export File:</strong> </label>
+           
+                <div class="custom-control custom-radio" id="edit-export-file-ris-wrapper">                    
+                        <input type="radio" id="edit-export-file-ris" name="export_file" value="ris" checked="checked" class="custom-control-input">
+                        <label class="custom-control-label" for="edit-export-file-ris"> RIS (for EndNote, Reference Manager, ProCite)</label>
+                </div>
+                <div class="custom-control custom-radio" id="edit-export-file-bibtex-wrapper">                    
+                        <input type="radio" id="edit-export-file-bibtex" name="export_file" value="bibtex" class="custom-control-input">
+                        <label class="custom-control-label" for="edit-export-file-bibtex"> BibTeX</label>
+                </div>
+                <div class="custom-control custom-radio" id="edit-export-file-text-wrapper">                   
+                        <input type="radio" id="edit-export-file-text" name="export_file" value="text" class="custom-control-input"> <label class="custom-control-label" for="edit-export-file-text"> Text</label>
+                </div>
+                
+    </div>
+        <div class="form-group">     
+            <label><strong>Content:</strong> </label>    
+                <div class="custom-control custom-radio" id="edit-content-citation-wrapper">                    
+                        <input type="radio" id="edit-content-citation" name="content" value="citation" class="custom-control-input">
+                        <label class="custom-control-label" for="edit-content-citation"> Citation Only</label>
+                </div>
+                <div class="custom-control custom-radio" id="edit-content-citation-abstract-wrapper">                    
+                        <input type="radio" id="edit-content-citation-abstract" name="content" value="citation_abstract" checked="checked" class="custom-control-input">
+                        <label class="custom-control-label" for="edit-content-citation-abstract"> Citation and Abstract</label>
+                </div>
+            
+       
+        <input type="submit" name="op" id="edit-export" value="Export" onclick="javascript:return checkradio()" class="btn btn-outline-primary float-right">
+        <input type="hidden" name="export_file_hidden" id="edit-export-file-hidden" value="">
+        <input type="hidden" name="content_hidden" id="edit-content-hidden" value="">
+        <input type="hidden" name="form_build_id" id="form-278487bec247e2f69b37fa03b10b8556" value="form-278487bec247e2f69b37fa03b10b8556">
+        <input type="hidden" name="form_id" id="edit-export-citation-form" value="export_citation_form">
+    </div>
+</form>
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- Export Window End-->
+
+
+
+            <!-- Cite Window Start-->
+
+            <div class="modal fade" id="CiteWindow" role="dialog">
+
+              <div class="modal-dialog modal-lg">
+
+                <div class="modal-content">
+
+                  <div class="modal-header">
+
+                    <h4 class="modal-title">About this article</h4>
+
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+
+                  </div>
+
+                  <div class="modal-body ">
+
+                    <p><strong>Cite this article as:</strong></p>
+
+                    <p>
+                                             Methods for the Prediction of Protein-Ligand Binding Sites for Structure-Based Drug Design and Virtual Ligand Screening., Current Protein & Peptide Science 2006; 7
+                                            (5)
+                      
+                      . <a href="https://dx.doi.org/10.2174/138920306778559386">https://dx.doi.org/10.2174/138920306778559386</a> </p>
+
+                    <table class="table">
+
+                      <tr>
+
+                        <td><b>DOI</b><br><a href="https://dx.doi.org/10.2174/138920306778559386">https://dx.doi.org/10.2174/138920306778559386</a></td>
+
+                        <td><b>Print ISSN</b><br>1389-2037</td>
+
+                      </tr>
+
+                      <tr>
+
+                        <td><b>Publisher Name</b><br>Bentham Science Publisher</td>
+
+                        <td><b>Online ISSN</b><br>1875-5550</td>
+
+                      </tr>
+
+                    </table>
+
+                  </div>
+
+                  <div class="modal-footer">
+
+                    <button type="button" class="btn btn-outline-dark" data-dismiss="modal">Close</button>
+
+                    <a class="btn btn-outline-primary" href="/journal/42/about-journal" target="_blank">About this journal</a>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- Cite Window End-->
+
+
+
+
+
+            <div class="col pl-md-0 mt-xs-2 pt-md-2">
+
+              
+
+              <span class="sharethis-inline-share-buttons st-left  st-inline-share-buttons st-animated" data-url="https://www.eurekaselect.com/article/22102" data-title=" Methods for the Prediction of Protein-Ligand Binding Sites for Structure-Based Drug Design and Virtual Ligand Screening."></span>
+              
+            </div>
+
+
+
+
+
+            <!----Bottom Banner Section Starts---->
+
+            
+            <!----End---->
+
+          </div>
+
+
+
+
+
+          <div class="row mt-4 mb-4 mb-md-0 d-none d-md-block" id="related">
+
+                                    <div class="col-md-12">
+              <h3>Call for Papers in Thematic Issues</h3>
+              <div class="row" id="reco-article">
+                                 <div class="col-md-6 m-0 mt-0 mb-2">
+                  <div class="card shadow h-100 m-1">
+                    <div class="card-header bg-white pb-1">
+                      <label class="mr-2"><b>Submission closes on&nbsp;:</b></label>
+                      <span class="text-black"> 31 December, 2024 </span>
+                    </div>
+                    <div class="card-body py-2">
+                      <a class="m-0 p-0" href="https://www.eurekaselect.com/call-for-papers-detail/5968/specialissue">
+                      <h5 class="m-0 p-0">Advancements in Proteomic and Peptidomic Approaches in Cancer Immunotherapy: Unveiling the Immune Microenvironment</h5>
+					  </a>
+                      <p class="text-black-50 mt-2 mb-0">The scope of this thematic issue centers on the integration of proteomic and peptidomic technologies into the field of cancer immunotherapy, with a particular emphasis on exploring the tumor immune microenvironment. This issue aims to gather contributions that illustrate the application of these advanced methodologies in unveiling the complex interplay ...<a href="/call-for-papers-detail/5968/specialissue">read more </a></p><br>
+                    </div>
+                    <div class="card-footer bg-white">
+                      <strong> Guest Editor(s):</strong> <span>Dr. Hao Chi</span>
+                    </div>
+                  </div>
+              </div>
+                                                           <div class="col-md-6 m-0 mt-0 mb-2">
+                  <div class="card shadow h-100 m-1">
+                    <div class="card-header bg-white pb-1">
+                      <label class="mr-2"><b>Submission closes on&nbsp;:</b></label>
+                      <span class="text-black"> 01 May, 2025 </span>
+                    </div>
+                    <div class="card-body py-2">
+                      <a class="m-0 p-0" href="https://www.eurekaselect.com/call-for-papers-detail/6019/specialissue">
+                      <h5 class="m-0 p-0">Artificial Intelligence for Protein Research</h5>
+					  </a>
+                      <p class="text-black-50 mt-2 mb-0">Protein research, essential for understanding biological processes and creating therapeutics, faces challenges due to the intricate nature of protein structures and functions. Traditional methods are limited in exploring the vast protein sequence space efficiently. Artificial intelligence (AI) and machine learning (ML) offer promising solutions by improving predictions and speeding up ...<a href="/call-for-papers-detail/6019/specialissue">read more </a></p><br>
+                    </div>
+                    <div class="card-footer bg-white">
+                      <strong> Guest Editor(s):</strong> <span>Dr. Xiu-An Yang</span>
+                    </div>
+                  </div>
+              </div>
+                                                           <div class="col-md-6 m-0 mt-0 mb-2">
+                  <div class="card shadow h-100 m-1">
+                    <div class="card-header bg-white pb-1">
+                      <label class="mr-2"><b>Submission closes on&nbsp;:</b></label>
+                      <span class="text-black"> 31 March, 2025 </span>
+                    </div>
+                    <div class="card-body py-2">
+                      <a class="m-0 p-0" href="https://www.eurekaselect.com/call-for-papers-detail/5992/specialissue">
+                      <h5 class="m-0 p-0">Nutrition and Metabolism in Musculoskeletal Diseases</h5>
+					  </a>
+                      <p class="text-black-50 mt-2 mb-0">The musculoskeletal system consists mainly of cartilage, bone, muscles, tendons, connective tissue and ligaments. Balanced metabolism is of vital importance for the homeostasis of the musculoskeletal system. A series of musculoskeletal diseases (for example, sarcopenia, osteoporosis) are resulted from the dysregulated metabolism of the musculoskeletal system. Furthermore, metabolic diseases (such ...<a href="/call-for-papers-detail/5992/specialissue">read more </a></p><br>
+                    </div>
+                    <div class="card-footer bg-white">
+                      <strong> Guest Editor(s):</strong> <span>Dr. Lingfeng Zeng</span>
+                    </div>
+                  </div>
+              </div>
+                                                           <div class="col-md-6 m-0 mt-0 mb-2">
+                  <div class="card shadow h-100 m-1">
+                    <div class="card-header bg-white pb-1">
+                      <label class="mr-2"><b>Submission closes on&nbsp;:</b></label>
+                      <span class="text-black"> 28 August, 2024 </span>
+                    </div>
+                    <div class="card-body py-2">
+                      <a class="m-0 p-0" href="https://www.eurekaselect.com/call-for-papers-detail/5852/specialissue">
+                      <h5 class="m-0 p-0">Protein Folding, Aggregation and Liquid-Liquid Phase Separation</h5>
+					  </a>
+                      <p class="text-black-50 mt-2 mb-0">Protein folding, misfolding and aggregation remain one of the main problems of interdisciplinary science not only because many questions are still open, but also because they are important from the point of view of practical application. Protein aggregation and formation of fibrillar structures, for example, is a hallmark of a ...<a href="/call-for-papers-detail/5852/specialissue">read more </a></p><br>
+                    </div>
+                    <div class="card-footer bg-white">
+                      <strong> Guest Editor(s):</strong> <span> Mai  Li</span>
+                    </div>
+                  </div>
+              </div>
+                                                                                                  </div>
+                        <div class="text-right">
+              <a href="https://www.eurekaselect.com/call-for-papers/cpps" type="button" class="btn btn-primary mt-2">More</a>
+            </div>
+                      </div>
+          
+            <div class="col-md-12">
+
+              <!-- Related Journals -->
+
+              <div class="card mt-4">
+            <div class="card-body">
+              <h5 class="card-title">Related Journals</h5>
+              <div id="related_journal" class="carousel carousel-by-item slide" data-ride="carousel">
+                              <div class="carousel-inner text-center">
+                                                                                                <div class="carousel-item  active ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/journal/6">
+                                  <img width="160" height="211" src="/images/bentham/CBC_0.gif" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Current Bioactive Compounds</p>
+                                  </div>                                 
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/journal/10">
+                                  <img width="160" height="211" src="/images/bentham/CDR_0.preview.gif" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Current Diabetes Reviews</p>
+                                  </div>                                 
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/journal/17">
+                                  <img width="160" height="211" src="/images/bentham/CEI_2020.jpg" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Current Enzyme Inhibition</p>
+                                  </div>                                 
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/journal/23">
+                                  <img width="160" height="211" src="/images/bentham/cmm-2020.jpg" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Current Molecular Medicine</p>
+                                  </div>                                 
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/journal/24">
+                                  <img width="160" height="211" src="/images/bentham/CG-2020.jpg" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Current Genomics</p>
+                                  </div>                                 
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/journal/25">
+                                  <img width="160" height="211" src="/images/bentham/CMC.gif" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Current Medicinal Chemistry</p>
+                                  </div>                                 
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/journal/28">
+                                  <img width="160" height="211" src="/images/bentham/CGT_0.gif" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Current Gene Therapy</p>
+                                  </div>                                 
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/journal/38">
+                                  <img width="160" height="211" src="/images/bentham/CTMC-2020.jpg" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Current Topics in Medicinal Chemistry</p>
+                                  </div>                                 
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/journal/43">
+                                  <img width="160" height="211" src="/images/bentham/CST_0.gif" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Current Signal Transduction Therapy</p>
+                                  </div>                                 
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/journal/50">
+                                  <img width="160" height="211" src="/images/bentham/MC_0.gif" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Medicinal Chemistry</p>
+                                  </div>                                 
+                                </div>
+                                                                                              </div>
+                                                            <a class="carousel-control-prev text-dark" href="#related_journal" role="button" data-slide="prev"><i class="fas fa-angle-left"></i>
+                              </a>
+                              <a class="carousel-control-next text-dark" href="#related_journal" role="button" data-slide="next"><i class="fas fa-angle-right"></i>
+                              </a>
+                                                          </div>
+            </div>
+             <div class="card-footer text-muted bg-white">
+                            <div class="mx-auto  text-center"><a href="/journal/42/related-journal" class="btn btn-sm btn-link text-muted">View More <i class="fas fa-angle-double-right"></i></a></div>
+                          </div>
+          </div>
+          
+            </div>
+
+            <div class="col-md-12">
+
+              <!-- Related e-Books -->
+
+              <div class="card mt-4">
+            <div class="card-body">
+              <h5 class="card-title">Related Books</h5>
+              <div id="related_ebook" class="carousel carousel-by-item slide" data-ride="carousel">
+                              <div class="carousel-inner text-center">
+                                                                                                <div class="carousel-item  active ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/ebook_volume/3717">
+                                  <img  width="160" height="211"  alt="" src="/images/bentham/9789815196115.jpg" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Opportunities for Biotechnology Research and Entrepreneurship</p>
+                                  <!--p class="card-text">eISBN: 978-981-5196-11-5<br>
+                                  ISBN: 978-981-5196-12-2</p-->
+                                  </div>
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/ebook_volume/3708">
+                                  <img  width="160" height="211"  alt="" src="/images/bentham/9789815223071.jpg" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Diseases of Ornamental, Aromatic and Medicinal Plants</p>
+                                  <!--p class="card-text">eISBN: 978-981-5223-07-1<br>
+                                  ISBN: 978-981-5223-08-8</p-->
+                                  </div>
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/ebook_volume/3707">
+                                  <img  width="160" height="211"  alt="" src="/images/bentham/9789815256024.jpg" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Diabetes and Breast Cancer: An Analysis of Signaling Pathways</p>
+                                  <!--p class="card-text">eISBN: 978-981-5256-02-4<br>
+                                  ISBN: 978-981-5256-03-1</p-->
+                                  </div>
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/ebook_volume/3705">
+                                  <img  width="160" height="211"  alt="" src="/images/bentham/9789815238037.jpg" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Fundamentals of Cellular and Molecular Biology</p>
+                                  <!--p class="card-text">eISBN: 978-981-5238-03-7<br>
+                                  ISBN: 978-981-5238-04-4</p-->
+                                  </div>
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/ebook_volume/3697">
+                                  <img  width="160" height="211"  alt="" src="/images/bentham/9789815079753.jpg" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Industrial Applications of Soil Microbes</p>
+                                  <!--p class="card-text">eISBN: 978-981-5079-75-3<br>
+                                  ISBN: 978-981-5079-76-0</p-->
+                                  </div>
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/ebook_volume/3696">
+                                  <img  width="160" height="211"  alt="" src="/images/bentham/9789815223798.jpg" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Genome Editing in Bacteria (Part 2)</p>
+                                  <!--p class="card-text">eISBN: 978-981-5223-79-8<br>
+                                  ISBN: 978-981-5223-80-4</p-->
+                                  </div>
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/ebook_volume/3695">
+                                  <img  width="160" height="211"  alt="" src="/images/bentham/9789815136203.jpg" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Aromatherapy: The Science of Essential Oils</p>
+                                  <!--p class="card-text">eISBN: 978-981-5136-20-3<br>
+                                  ISBN: : 978-981-5136-21-0</p-->
+                                  </div>
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/ebook_volume/3690">
+                                  <img  width="160" height="211"  alt="" src="/images/bentham/9789815196351.jpg" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead"><i>In Vitro</i> Propagation and Secondary Metabolite Production from Medicinal Plants: Current Trends (Part 2)</p>
+                                  <!--p class="card-text">eISBN: 978-981-5196-35-1<br>
+                                  ISBN: 978-981-5196-36-8</p-->
+                                  </div>
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/ebook_volume/3688">
+                                  <img  width="160" height="211"  alt="" src="/images/bentham/9789815238303.jpg" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Micropropagation of Medicinal Plants</p>
+                                  <!--p class="card-text">eISBN: 978-981-5238-30-3<br>
+                                  ISBN: 978-981-5238-31-0</p-->
+                                  </div>
+                                </div>
+                                                                                                <div class="carousel-item ">
+                                  <div class="col-lg-4 col-md-4 col-sm-2 col">
+                                  <a href="https://www.eurekaselect.com/ebook_volume/3681">
+                                  <img  width="160" height="211"  alt="" src="/images/bentham/9789815223019.jpg" class="img-fluid"/>
+                                  </a>
+                                  <p class="lead">Software and Programming Tools in Pharmaceutical Research</p>
+                                  <!--p class="card-text">eISBN: 978-981-5223-01-9<br>
+                                  ISBN: 978-981-5223-02-6</p-->
+                                  </div>
+                                </div>
+                                                                                              </div>
+                                                            <a class="carousel-control-prev text-dark" href="#related_ebook" role="button" data-slide="prev"><i class="fas fa-angle-left"></i>
+                              </a>
+                              <a class="carousel-control-next text-dark" href="#related_ebook" role="button" data-slide="next"><i class="fas fa-angle-right"></i>
+                              </a>
+                                                          </div>
+            </div>
+            <div class="card-footer text-muted bg-white">
+                            <div class="mx-auto  text-center"><a href="/journal/42/related-ebooks" class="btn btn-sm btn-link text-muted">View More <i class="fas fa-angle-double-right"></i></a></div>
+                          </div>
+          </div>
+          
+            </div>
+
+          </div>
+
+        </div>
+
+
+
+        <div class="col-md-4 ji-links">
+
+          
+          
+          
+          <div class="metrics d-flex  flex-nowrap bigbox-hvr-slow border-bottom-0">
+
+            <div class="caption align-bottom">Article Metrics</div>
+
+            
+            <div><img src="/images/pdf.svg" alt=""> <span>35</span></div>
+
+            
+            
+            
+            
+          </div>
+
+          
+
+
+          <!----Journal Menu Section Starts---->
+
+          
+          <div class="mb-4 mt-3 px-2 rounded-0 rounded-bottom">
+
+            <span class="__dimensions_badge_embed__" data-hide-zero-citations="true" data-doi="10.2174/138920306778559386" data-legend="always" data-style="small_circle"></span>
+            <script async src="https://badge.dimensions.ai/badge.js" charset="utf-8"></script>
+
+          </div>
+
+          
+          <a href="/wayfinder/eyJpdiI6IjB1c0U2Qk1qNFNhVHhBTCt4cytudGc9PSIsInZhbHVlIjoiekdROTJRS1pWbkRpY0JJOUh4Y29PZGdWdVlhQ1VYbUx1ZUJrcDQyY0x2TT0iLCJtYWMiOiIzN2M5MjZiOWIxZGUzODkyMWM2Y2I1Y2VkOGFlNmYzZDg1OGUxZGY5OGIyNjQ5YjdiYzllNDg3MGYxODQwYzEzIiwidGFnIjoiIn0="><img src="/images/wayfinder.jpg" class="img-fluid mb-3"></a>
+<div class="accordion mb-4" id="journal-rightmenu">
+
+  <div class="card">
+
+    <div class="card-header" id="ji">
+
+      <a class="btn btn-link" data-toggle="collapse" data-target="#btn-ji" aria-expanded="true" aria-controls="btn-ji">
+        <strong>Journal Information</strong> <i class="fas fa-chevron-circle-down float-right"></i>
+      </a>
+
+    </div>
+    <div id="btn-ji" class="collapse show" aria-labelledby="ji" data-parent="#accordionExample">
+      <ul class="list-group list-group-flush d-inline">
+
+        <li class="list-group-item hvr-sweep-to-left "><a href="/journal/42/about-journal"><i class="fas fa-angle-right"></i> About Journal</a></li>
+
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/editorial-board"> Editorial Board</a></li>
+
+        <!-- It will be hidden Until Journal's website got live
+                                     <li class="list-group-item hvr-sweep-to-left "><a href="http://www.currentproteinpeptidescience.com/" target="_blank"><i class="fas fa-angle-right"></i> Journal Insight</li>
+                   -->
+
+        
+                <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/current-issue"> Current Issue </a></li>
+                <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="https://www.eurekaselect.com/journal/42"> Volumes
+                        /Issues
+                      </a></li>
+
+      </ul>
+
+    </div>
+  </div>
+
+  <div class="card mt-3">
+    <div class="card-header" id="ep">
+
+      <a class="btn btn-link" data-toggle="collapse" data-target="#btn-ep" aria-expanded="false" aria-controls="btn-ep">
+
+        <strong>For Authors
+        </strong> <i class="fas fa-chevron-circle-down float-right"></i>
+      </a>
+
+    </div>
+
+    <div id="btn-ep" class="collapse" aria-labelledby="ep" data-parent="#accordionExample">
+      <ul class="list-group list-group-flush d-inline">
+
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/ifa"> Author Guidelines </a></li>
+        <li class="list-group-item hvr-sweep-to-left"><i class="fas fa-angle-right"></i><a href="/pages/graphical-abstracts"> Graphical Abstracts </a></li>
+        <li class="list-group-item hvr-sweep-to-left"><i class="fas fa-angle-right"></i><a href="/fabricating-stating-false-information"> Fabricating and Stating False Information</a></li>
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/research-misconduct"> Research Misconduct</a></li>
+        <li class="list-group-item hvr-sweep-to-left"><i class="fas fa-angle-right"></i><a href="/pages/post-publication"> Post Publication Discussions and Corrections</a></li>
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/publishing-ethics"> Publishing Ethics and Rectitude</a></li>
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/increase-visibility-article"> Increase Visibility of Your Article </a></li>
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/self-archiving-policies"> Archiving Policies </a></li>
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/peer-review-workflow"> Peer Review Workflow </a></li>
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/track/4"> Order Your Article Before Print </a></li>
+        <li class="list-group-item hvr-sweep-to-left"><i class="fas fa-angle-right"></i><a href="/how-maximize-visibility-published-articles"> Promote Your Article</a></li>
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/manuscript-transfer-facility"> Manuscript Transfer Facility</a></li>
+
+
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/editorial-policy"> Editorial Policies </a></li>
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/allegations-from-whistleblowers"> Allegations from Whistleblowers</a></li>
+
+        
+        
+
+
+        
+                <li class="list-group-item hvr-sweep-to-left ">
+          <form action="https://www.eurekaselect.com/call-for-papers" method="POST"><input type="hidden" name="_token" value="nbhDppZwD2jh9EXfI9fLylGkI88Fcv7olmX5HfvE"><input type="hidden" name="search_journals[]" value="CPPS">
+            <i class="fas fa-angle-right"></i> <button type="submit" class="btn text-dark p-0 m-0" style="font-size:14px;"> Forthcoming Thematic Issues </button>
+          </form>
+        </li>
+              </ul>
+
+    </div>
+  </div>
+
+  <div class="card mt-3">
+    <div class="card-header" id="fe">
+
+      <a class="btn btn-link" data-toggle="collapse" data-target="#btn-fe" aria-expanded="false" aria-controls="btn-fe">
+
+        <strong>For Editors
+        </strong> <i class="fas fa-chevron-circle-down float-right"></i>
+      </a>
+
+    </div>
+
+    <div id="btn-fe" class="collapse" aria-labelledby="fe" data-parent="#accordionExample">
+      <ul class="list-group list-group-flush d-inline">
+
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/guest-editor-guidelines"> Guest Editor Guidelines </a></li>
+        <li class="list-group-item hvr-sweep-to-left"><a href="/pages/editorial-management" target="_blank"><i class="fas fa-angle-right"></i> Editorial Management</a></li>
+        <li class="list-group-item hvr-sweep-to-left"><i class="fas fa-angle-right"></i><a href="/fabricating-stating-false-information"> Fabricating and Stating False Information</a></li>
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/publishing-ethics"> Publishing Ethics and Rectitude</a></li>
+        <li class="list-group-item hvr-sweep-to-left"><a href="/pages/short-guide" target="_blank"><i class="fas fa-angle-right"></i> Ethical Guidelines for New Editors</a></li>
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/peer-review-workflow"> Peer Review Workflow </a></li>
+
+      </ul>
+    </div>
+  </div>
+
+  <div class="card mt-3">
+    <div class="card-header" id="fr">
+
+      <a class="btn btn-link" data-toggle="collapse" data-target="#btn-fr" aria-expanded="false" aria-controls="btn-fr">
+
+        <strong>For Reviewers
+        </strong> <i class="fas fa-chevron-circle-down float-right"></i>
+      </a>
+
+    </div>
+
+    <div id="btn-fr" class="collapse" aria-labelledby="fr" data-parent="#accordionExample">
+      <ul class="list-group list-group-flush d-inline">
+
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/guideline-for-reviewers"> Reviewer Guidelines </a></li>
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/peer-review-workflow"> Peer Review Workflow </a></li>
+        <li class="list-group-item hvr-sweep-to-left"><i class="fas fa-angle-right"></i><a href="/fabricating-stating-false-information"> Fabricating and Stating False Information</a></li>
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/publishing-ethics"> Publishing Ethics and Rectitude</a></li>
+
+      </ul>
+    </div>
+  </div>
+
+  <div class="card mt-3">
+    <div class="card-header" id="ea">
+
+      <a class="btn btn-link collapsed" data-toggle="collapse" data-target="#btn-ea" aria-expanded="false" aria-controls="btn-ea">
+
+        <strong>Explore Articles</strong> <i class="fas fa-chevron-circle-down float-right"></i>
+      </a>
+
+    </div>
+    <div id="btn-ea" class="collapse" aria-labelledby="ea" data-parent="#accordionExample">
+
+      <ul class="list-group list-group-flush d-inline">
+                <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i> <a href="/journal/42/track/4"> Abstract Ahead of Print <span class="px-2 rounded-pill bg-secondary text-white ml-2">0</span></a></li>
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i> <a href="/journal/42/track/1"> Article(s) in Press <span class="px-2 rounded-pill bg-secondary text-white ml-2">11</span> </a></li>
+                
+                <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/free-copies-online"> Free Online Copy</a> </li>
+        
+
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/most-cited-articles"> Most Cited Articles </a></li>
+
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/most-accessed-articles"> Most Accessed Articles </a></li>
+
+        <!-- <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/highlighted-article"> Highlighted Article </a></li> -->
+
+        <!-- <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/most-popular-articles"> Most Popular Articles </a></li> -->
+                        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/editors-choice"> Editor's Choice </a></li>
+                <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/thematic-issue"> Thematic Issues </a></li>
+
+      </ul>
+
+    </div>
+  </div>
+
+    <div class="card mt-3">
+    <div class="card-header" id="oa">
+
+      <a class="btn btn-link collapsed" data-toggle="collapse" data-target="#btn-oa" aria-expanded="false" aria-controls="btn-oa">
+
+        <strong>Open Access</strong> <i class="fas fa-chevron-circle-down float-right"></i>
+      </a>
+
+    </div>
+    <div id="btn-oa" class="collapse" aria-labelledby="oa" data-parent="#accordionExample">
+
+      <ul class="list-group list-group-flush d-inline">
+
+        <li class="list-group-item hvr-sweep-to-left "><i class="fas fa-angle-right"></i><a href="/journal/42/open-access-articles"> Open Access Articles </a></li>
+
+        <!-- <li class="list-group-item hvr-sweep-to-left "><a href="/author-compliance/CPPS"><i class="fas fa-angle-right"></i> Open Access Funding </a></li> -->
+
+      </ul>
+
+    </div>
+  </div>
+  
+  <div class="card mt-3">
+    <div class="card-header" id="fv">
+
+      <a class="btn btn-link collapsed" data-toggle="collapse" data-target="#btn-fv" aria-expanded="false" aria-controls="btn-fv">
+
+        <strong>For Visitors</strong> <i class="fas fa-chevron-circle-down float-right"></i>
+      </a>
+
+    </div>
+    <div id="btn-fv" class="collapse" aria-labelledby="fv" data-parent="#accordionExample">
+
+      <ul class="list-group list-group-flush d-inline">
+        <li class="list-group-item hvr-sweep-to-left "><a href="/journal/42/library-recommendation"><i class="fas fa-angle-right"></i> Library Recommendation</a> </li>
+                <li class="list-group-item hvr-sweep-to-left "><a href="/journal/42/trial-requests"><i class="fas fa-angle-right"></i> Trial Requests </a></li>
+        
+        <li class="list-group-item hvr-sweep-to-left "><a href="/journal/42/advertise-with-us"><i class="fas fa-angle-right"></i> Advertise With Us </a></li>
+
+                        <li class="list-group-item hvr-sweep-to-left "><a href="/journal/42/executive-guest-editor" target="_blank"><i class="fas fa-angle-right"></i> Meet the Executive Guest Editor(s)</a></li>
+                
+        <li class="list-group-item hvr-sweep-to-left"><a href="/pages/brand-ambassador" target="_blank"><i class="fas fa-angle-right"></i> Brand Ambassador</a></li>
+
+        <li class="list-group-item hvr-sweep-to-left"><a href="/author-comments" target="_blank"><i class="fas fa-angle-right"></i>Author's Comment & Reviews</a></li>
+
+        <li class="list-group-item hvr-sweep-to-left"><a href="/pages/new-journals-2023" target="_blank"><i class="fas fa-angle-right"></i> New Journals 2023</a></li>
+
+        <li class="list-group-item hvr-sweep-to-left"><a href="/pages/new-journals-2024" target="_blank"><i class="fas fa-angle-right"></i> New Journals 2024</a></li>
+
+        <li class="list-group-item hvr-sweep-to-left"><i class="fas fa-angle-right"></i> <a href="https://www.eurekaselect.com/alert-subscription">Alert Subscription</a> </li>
+
+        <li class="list-group-item hvr-sweep-to-left"><i class="fas fa-angle-right"></i> <a href="http://benthamalerts.com/" target="_blank">TOC Alert</a> </li>
+
+      </ul>
+
+    </div>
+  </div>
+
+
+</div>
+
+
+
+<!----Banner Section Starts---->
+<!----Banner Section Ends---->
+          
+          <!----Journal Menu Section Ends---->
+
+
+
+
+
+
+
+          
+
+
+        </div>
+
+        
+
+
+      </div>
+
+      <!-- --------------Trial Trial Terms Condition------------------------- -->
+
+      
+      <a id="license" href="https://www.eurekaselect.com/terms/22102"></a>
+
+      
+
+
+      <div style="text-align:left;" class="modal fade" id="TnCModal" tabindex="-1" role="dialog" aria-labelledby="TnCModalLabel" aria-hidden="true">
+
+        <div class="modal-dialog modal-lg">
+
+          <div class="modal-content">
+
+
+
+          </div> <!-- /.modal-content -->
+
+        </div> <!-- /.modal-dialog -->
+
+      </div>
+
+      <!-- -----------------End---------------------------------------  -->
+
+      <form method="POST" action="https://www.eurekaselect.com/download_file" accept-charset="UTF-8" id="download-form-pdf-e"><input name="_token" type="hidden" value="nbhDppZwD2jh9EXfI9fLylGkI88Fcv7olmX5HfvE">
+
+      <input type="hidden" name="agree-flag" id="agree-flag" value="1">
+
+      <input type="hidden" name="param" value="eyJpdiI6Ijh2by84VlJJUWpScFhyUHZQcldFUFE9PSIsInZhbHVlIjoibWxYYnNvdFhZWVdtdmYyU3NNbXZMTlcvUU5ZaUp2MWx4dVJhVXN3VEd0MD0iLCJtYWMiOiIwODQ0MTQyM2JkMjUwYTIyNWJjZDFkM2UyMWU5NTkxMmIwMmY5MzI2ZDY3ZTAzY2ZjZDA0Y2I0ZTdlNTk0NGNmIiwidGFnIjoiIn0=">
+
+      <div class="modal fade" id='download_hide_22102' tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+
+        <div class="modal-dialog">
+
+          <div class="modal-content">
+
+            <div class='modal-header bg-primary'>
+
+              <h4 class="modal-title text-white" id="modalLabelprimary">Restricted Access Panel</h4>
+
+              <button type='button' class='close' data-dismiss='modal' aria-label='Close'><span aria-hidden='true'>&times;</span></button>
+
+
+
+            </div>
+
+            <div class='modal-body'>
+
+              <label class="control-label">Content Access Key</label>
+
+              <input type="text" name="user_name" class="form-control">
+
+              <label class="control-label">Password</label>
+
+              <input type="password" name="password" class="form-control">
+
+            </div> <!-- /.modal-body -->
+
+            <div class="modal-footer">
+
+              <button type="submit" class="btn btn-primary" onclick="javascript: $('#download_hide_22102').modal('hide');"><span class="glyphicon glyphicon-remove-circle"></span> Login to Download</button>
+
+              <button type="button" class="btn btn-default" data-dismiss="modal"><span class="glyphicon glyphicon-remove-circle"></span> Close</button>
+
+
+
+            </div>
+
+          </div> <!-- /.modal-content -->
+
+        </div> <!-- /.modal-dialog -->
+
+      </div>
+
+      </form>
+
+
+
+      <input type="hidden" name="license_downloadid" id="license_downloadid" value="0">
+
+
+
+
+
+      
+
+
+  </section>
+
+
+
+</main>
+
+
+
+</div>
+
+        <footer>
+           <div class="container">
+
+     <div class="row">
+
+         <div class="col-md-4 text-center">
+
+             <img alt="Bentham Science Publishers" class="wow fadeInDown footer-c-logo" src="/images/logo.webp">
+
+             <div class="col-12 social-icons">
+
+                 <a class="wow bounceInUp hvr-float-shadow" data-wow-delay=".1s" href="https://www.linkedin.com/company/benthamscience" target="_blank" rel="noopener" aria-label="eurekaselect linkedin link">
+
+                     <i class="fab fa-linkedin-in">
+
+                     </i>
+
+                 </a>
+
+                 <a class="wow bounceInUp hvr-float-shadow" data-wow-delay=".2s" href="https://www.youtube.com/c/benthamsciencepublisher" target="_blank" rel="noopener" aria-label="eurekaselect youtube link">
+
+                     <i class="fab fa-youtube">
+
+                     </i>
+
+                 </a>
+
+                 <a class="wow bounceInUp hvr-float-shadow" data-wow-delay=".3s" href="https://twitter.com/BenthamScienceP" target="_blank" rel="noopener" aria-label="eurekaselect twitter link">
+
+                     <i class="fab fa-x-twitter">
+
+                     </i>
+
+                 </a>
+
+                 <a class="wow bounceInUp hvr-float-shadow" data-wow-delay=".4s" href="https://www.facebook.com/BenthamSciencePublishers" target="_blank" rel="noopener" aria-label="eurekaselect facebook link">
+
+                     <i class="fab fa-facebook-f">
+
+                     </i>
+
+                 </a>
+
+                 <a class="wow bounceInUp hvr-float-shadow" data-wow-delay=".5s" href="https://benthamsciencepublishers.wordpress.com/" target="_blank" rel="noopener" aria-label="eurekaselect wordpress link">
+
+                     <i class="fab fa-wordpress-simple">
+
+                     </i>
+
+                 </a>
+
+                 <a class="wow bounceInUp kudos hvr-float-shadow" data-wow-delay=".6s" href="/kudos" target="_blank" rel="noopener" aria-label="eurekaselect kudos link">
+
+                     &nbsp;
+
+                 </a>
+
+             </div>
+
+             </img>
+
+         </div>
+
+         <div class="col-md-8">
+
+             <div class="row quicklinks pt-4">
+
+                 <div class="col-lg-3 col-md-12 pt-lg-5">
+
+                     <h4 class="align-middle wow fadeInUp">
+
+                         Quick Links
+
+                     </h4>
+
+                 </div>
+
+                 <div class="col-lg-12 col-xl-9 col-md-12 bracket"><span class="align-middle wow fadeInRight"><a href="/bypublication">Journals </a> | <a href="/bybook"> Books </a> | <a href="https://bentham.manuscriptpoint.com
+
+"> Submit Articles </a>
+                         <!--| <a href="">   Authors 
+
+Editors  </a> | <a href="">   Societies   </a>--> | <a href="http://benthamalerts.com/"> Alerting Services </a> | <a href="/open-access-plus"> Open Access Plus (Gold Open Access) </a> | <a href="/pages/funding-agencies">Funding Agencies</a> | <a href="/endorsements">Endorsements</a> | <a href="/author-comments"> Author's Comments & Reviews </a> | <a href="https://benthamnewsletter.com/index.php" target="_blank" rel="noopener"> Newsletters </a> | <a href="/press-release"> Press Release </a> | <a href="/terms-and-conditions"> Terms and Conditions</a>
+                     </span>
+
+                 </div>
+
+
+
+                 <div class="col-md-12 text-right">
+
+                     <a href="https://registry.projectcounter.org/platform/1dfece8a-433e-4a48-8764-55cd7adc7799" target="_blank"  rel="noopener" aria-label="Counter certification"><img class="wow fadeInDown footer-logo" src="/images/counter-logo.webp" alt="counter logo"><span class="sr-only sr-only-focusable">Counter logo</span></a>
+
+                 </div>
+
+             </div>
+
+         </div>
+
+     </div>
+
+ </div>        </footer>
+        <div class="col-12 bg-light py-2">
+            <div class="container text-right">
+                <a href="/terms-and-conditions">© 2024 Bentham Science Publishers</a> | <a href="/privacy-policy">Privacy Policy</a>
+            </div>
+        </div>
+        
+        <script src="https://www.eurekaselect.com/plugins/wow-animate/wow.min.js">
+        </script>
+        <script>
+            new WOW().init();
+
+            // Below | login popup | Unable to close on click
+
+            jQuery('#login-wig.dropdown-toggle').on('click', function (e) {
+                if (!$(e.target).closest('#login-wig.dropdown-toggle').length) {
+                    $('#login-wig.dropdown-toggle').next().toggle();
+                }
+              });
+
+            jQuery('.dropdown-menu.login-pop').on('click', function (e) {
+              e.stopPropagation();
+            });
+
+            if(1) {
+              $('body').attr('tabindex', '0');
+            }
+
+            else {
+              alertify.confirm().set({'reverseButtons': true});
+              alertify.prompt().set({'reverseButtons': true});
+            }
+
+        </script>
+        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        
+        <script  src="https://www.eurekaselect.com/js/popper.min.js">
+        </script>
+        <!-- <script  src="https://www.eurekaselect.com/js/bootstrap.bundle.min.js">
+        </script> -->
+		        <script type="text/javascript" src="https://ws.sharethis.com/button/buttons.js"></script>
+    <script>
+    // share on social network link        
+    stLight.options({
+            publisher:"8af06b8c-6cba-4392-83f5-826bd4873e9b",
+            popup: true,
+            servicePopup: true
+            //shorten:false
+    });
+	copyPasteInit.
+    
+    </script>
+		
+	
+        <script type="text/javascript">
+     if(window.outerWidth > 800) {       
+              $(".dropdown-toggle").on("mouseenter", function () {
+                // make sure it is not shown:
+                if (!$(this).parent().hasClass("show")) {
+                    $(this).click();
+                }
+            });
+
+              $(".dropdown").on("mouseleave", function () {
+                // make sure it is shown:
+                if ($(this).hasClass("show")){
+                    $(this).children('.dropdown-toggle').first().click();
+                     //$(this).children('.dropdown-toggle').class(':not(:hover)');
+                }
+            });
+        };
+
+      $(function () {
+
+      $('[data-toggle*="offcanvas"]').on('click', function () {
+        $('.offcanvas-collapse').toggleClass('open')
+      })
+    });
+
+    </script>
+	
+    <script type="text/javascript">
+    $('#refresh-captcha').click(function () {
+        $.ajax({
+            type: 'GET',
+            url: '/customecaptcha/refresh',
+            success: function (data) {
+                $(".captcha span").html(data.captcha);
+            }
+        });
+    });
+
+</script>
+
+
+ <script>
+              //  Sticky Header
+    window.onscroll = function() {myFunction()};
+      var headeer = document.getElementById("fixed-header");
+      var sticky = headeer.offsetTop;
+
+      function myFunction() {
+        if (window.pageYOffset > sticky) {
+          headeer.classList.add("fixed-top");
+          $("#sticky-menu").addClass("sticky-top");
+        } else {
+          headeer.classList.remove("fixed-top");
+          $("#sticky-menu").removeClass("sticky-top");
+        }
+      }
+</script>   <!-- Global site tag (gtag.js) - Google Analytics -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-33930356-3', 'auto');
+  ga('send', 'pageview');
+
+</script>
+   
+    
+
+
+<script type="text/javascript">
+  $("#RightsLinkPopUp").click(function()
+
+    {
+
+      var url = "http://www.copyright.com/openurl";
+
+      var location = url + "?issn=" + encodeURI('13892037')
+
+        +
+        "&contentIdType=" + encodeURI('doi')
+
+        +
+        "&contentID=" + encodeURI('10.2174/138920306778559386')
+
+
+
+      PopUp = window.open(location, 'Copyright', 'location=no,toolbar=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=650,height=550');
+
+    });
+
+
+
+  function SendForPrint()
+
+  {
+
+
+
+
+
+    var printContents = document.getElementById("PrintWindow").innerHTML;
+
+
+
+    var originalContents = document.body.innerHTML; //parent content
+
+
+
+    document.body.innerHTML = printContents;
+
+
+
+    window.print();
+
+
+
+    document.body.innerHTML = originalContents;
+
+    document.getElementById("PrintWindow").style.display = "none";
+
+    window.location.reload();
+
+  }
+
+
+
+  function checkradio() {
+
+
+
+    export_file_hidden = document.getElementById("edit-export-file-hidden");
+
+    content_hidden = document.getElementById("edit-content-hidden");
+
+    var x = document.getElementsByName("export_file");
+
+    for (var i = 0; i < x.length; i++) // buztype is the name of the radio buttons which is an array; ie buztype[0].value is 1, buztype[1].value is 2, buztype[2].value is 3 based on what you have above.
+
+    {
+
+
+
+      if (x[i].checked)
+
+      {
+
+        var exportfile = x[i].value;
+
+      }
+
+
+
+    }
+
+    export_file_hidden.value = exportfile;
+
+    var y = document.getElementsByName("content");
+
+    for (var j = 0; j < y.length; j++) // buztype is the name of the radio buttons which is an array; ie buztype[0].value is 1, buztype[1].value is 2, buztype[2].value is 3 based on what you have above.
+
+    {
+
+
+
+      if (y[j].checked)
+
+      {
+
+        var content = y[j].value;
+
+      }
+
+
+
+    }
+
+    content_hidden.value = content;
+
+
+
+  }
+
+
+
+  $(function() {
+
+    var viewer = ImageViewer();
+
+    $('.gallery-items').click(function() {
+
+      var imgSrc = this.src,
+
+        highResolutionImage = $(this).data('high-res-src');
+
+
+
+      viewer.show(imgSrc, highResolutionImage);
+
+    });
+
+
+
+
+
+    $('.alert[data-auto-dismiss]').each(function(index, element) {
+
+      var $element = $(element),
+
+        timeout = $element.data('auto-dismiss') || 5000;
+
+
+
+      setTimeout(function() {
+
+        $element.alert('close');
+
+      }, timeout);
+
+    });
+
+
+
+  });
+
+
+
+  function CheckLicense(id) {
+
+    $('#license_downloadid').val(id);
+
+
+
+    var array = id.split('_');
+
+    var file_type = '';
+
+    if (array[0] != "readpdf")
+
+    {
+
+      id = id;
+
+    } else
+
+    {
+
+      id = array[1];
+
+      file_type = "readpdf";
+
+    }
+
+    if ($("#agree-flag").val() == "" || $("#agree-flag").val() != "Y") {
+
+
+
+      var target = $("#license").attr("href");
+
+      $("#TnCModal .modal-content").load(target + '/article/' + file_type, function() {
+
+        $("#TnCModal").modal("show");
+
+      });
+
+      return false;
+
+    }
+
+
+
+  }
+
+
+
+  function LoginToDownload(id) {
+
+
+
+    $("#" + id).modal("show");
+
+    return false;
+
+  }
+</script>
+
+<!-- ------------------------Rental Initilize and Script-------------------------------- -->
+
+
+
+
+<script type="text/javascript">
+  $(function() {
+
+    $('[data-toggle="popover"]').popover({
+      delay: {
+        "show": 100,
+        "hide": 1500
+      }
+    });
+
+  })
+</script>
+
+
+
+
+
+
+
+<script>
+  function GetUnique(e) {
+
+    var l = [],
+
+      s = temp_c = [],
+
+      t = ["col-md-1", "col-md-2", "col-md-3", "col-md-4", "col-md-6", "col-md-12", "col-sm-1", "col-sm-2", "col-sm-3", "col-sm-4", "col-sm-6", "col-sm-12", "col-lg-1", "col-lg-2", "col-lg-3", "col-lg-4", "col-lg-6", "col-lg-12", "col-xs-1", "col-xs-2", "col-xs-3", "col-xs-4", "col-xs-6", "col-xs-12", "col-xl-1", "col-xl-2", "col-xl-3", "col-xl-4", "col-xl-6", "col-xl-12"];
+
+    $(e).each(function() {
+
+      for (var l = $(e + " > div").attr("class").split(/\s+/), t = 0; t < l.length; t++) s.push(l[t])
+
+    });
+
+    for (var c = 0; c < s.length; c++) temp_c = s[c].split("-"), 2 == temp_c.length && (temp_c.push(""), temp_c[2] = temp_c[1], temp_c[1] = "xs", s[c] = temp_c.join("-")), -1 == $.inArray(s[c], l) && $.inArray(s[c], t) && l.push(s[c]);
+
+    return l
+
+  }
+
+
+
+  function setcss(e, l, s) {
+
+    for (var t = ["", "", "", "", "", ""], c = d = f = g = 0, r = [1200, 992, 768, 567, 0], o = [], a = 0; a < e.length; a++) {
+
+      var i = e[a].split("-");
+
+      if (3 == i.length) {
+
+        switch (i[1]) {
+
+          case "xl":
+
+            d = 0;
+
+            break;
+
+          case "lg":
+
+            d = 1;
+
+            break;
+
+          case "md":
+
+            d = 2;
+
+            break;
+
+          case "sm":
+
+            d = 3;
+
+            break;
+
+          case "xs":
+
+            d = 4
+
+        }
+
+        t[d] = i[2]
+
+      }
+
+    }
+
+    for (var n = 0; n < t.length; n++)
+
+      if ("" !== t[n]) {
+
+        if (0 === c && (c = 12 / t[n]), f = 12 / t[n], g = 100 / f, a = s + " > .carousel-item.active.carousel-item-right," + s + " > .carousel-item.carousel-item-next {-webkit-transform: translate3d(" + g + "%, 0, 0);transform: translate3d(" + g + ", 0, 0);left: 0;}" + s + " > .carousel-item.active.carousel-item-left," + s + " > .carousel-item.carousel-item-prev {-webkit-transform: translate3d(-" + g + "%, 0, 0);transform: translate3d(-" + g + "%, 0, 0);left: 0;}" + s + " > .carousel-item.carousel-item-left, " + s + " > .carousel-item.carousel-item-prev.carousel-item-right, " + s + " > .carousel-item.active {-webkit-transform: translate3d(0, 0, 0);transform: translate3d(0, 0, 0);left: 0;}", f > 1) {
+
+          for (k = 0; k < f - 1; k++) o.push(l + " .cloneditem-" + k);
+
+          o.length && (a = a + o.join(",") + "{display: block;}"), o = []
+
+        }
+
+        0 !== r[n] && (a = "@media all and (min-width: " + r[n] + "px) {" + a + "}"), $("#slider-css").prepend(a)
+
+      } $(l).each(function() {
+
+      for (var e = $(this), l = 0; l < c - 1; l++)(e = e.next()).length || (e = $(this).siblings(":first")), e.children(":first-child").clone().addClass("cloneditem-" + l).appendTo($(this))
+
+    })
+
+  }
+
+
+
+  //Use Different Slider IDs for multiple slider
+
+  $(document).ready(function() {
+
+
+
+    var item = '#related_journal .carousel-item';
+
+    var item_inner = "#related_journal .carousel-inner";
+
+    classes = GetUnique(item);
+
+    setcss(classes, item, item_inner);
+
+
+
+    var item = '#related_ebook .carousel-item';
+
+    var item_inner = "#related_ebook .carousel-inner";
+
+    classes = GetUnique(item);
+
+    setcss(classes, item, item_inner);
+
+
+
+  });
+
+
+
+</script>
+
+
+
+ 
+    </body>   
+</html>
