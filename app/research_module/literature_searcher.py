@@ -20,7 +20,7 @@ class UnifiedLiteratureSearcher:
                  from_year: Optional[int] = None,
                  to_year: Optional[int] = None,
                  scopus_max_results: int = 2000,
-                 two_step_search_queries: bool = False):
+                 two_step_search_queries: bool = True):
         """
         Initializes the UnifiedLiteratureSearcher with PubMed, Scopus, and Semantic Scholar API keys and an LLM instance.
 

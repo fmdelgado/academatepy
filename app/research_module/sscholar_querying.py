@@ -42,11 +42,11 @@ class SemanticScholarQueryGenerator:
             raise ValueError("An LLM instance is required to generate the query.")
 
         for attempt in range(2):  # Limit the number of attempts to prevent infinite loops
-            if self.two_step_search_query:
+            if self.two_step_search_queries:
                 query = self.generate_semantic_scholar_query_given_keywords(topic)
             else:
                 query = self.generate_semantic_scholar_query(topic)
-            query = self.clean_query(query)
+            #query = self.clean_query(query)
 
             # Validate the query
             if self.validate_query(query):
