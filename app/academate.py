@@ -21,6 +21,8 @@ import shutil
 from pdf_downloading_module.PDF_downloader import ArticleDownloader
 import hashlib
 import re
+from chatbot.selfrag import ChatbotApp, clean_answer, remap_source_citations
+
 
 email = 'fernando.miguel.delgado-chaves@uni-hamburg.de'
 # Set logging level to suppress DEBUG messages from other libraries
@@ -356,7 +358,7 @@ class academate:
     @staticmethod
     def atomic_save(file_path, data):
         """
-        Saves data to a file atomically.
+        Saves data to a file atomically.xq`
         """
         dir_name = os.path.dirname(file_path)
         with tempfile.NamedTemporaryFile('wb', delete=False, dir=dir_name) as tmp_file:
@@ -420,12 +422,15 @@ class academate:
 
         self.logger.info(
             f"Loaded {len(getattr(self, record2answer_attr))} existing records for {screening_type}\nLoaded {len(getattr(self, missing_records_attr))} missing records for {screening_type}")
+        return getattr(self, record2answer_attr), getattr(self, missing_records_attr)
 
     def get_rec_numbers(self, screening_type):
         if screening_type == 'screening1':
             return self.literature_df['uniqueid'].astype(str).to_list()
-        else:  # screening2
+        elif screening_type == 'screening2':
             return self.results_screening2['uniqueid'].astype(str).to_list()
+        else:
+            raise ValueError(f"Invalid screening type: {screening_type}")
 
     async def process_single_record_async(self, recnumber, chain, screening_type):
         max_retries = 5
@@ -438,7 +443,7 @@ class academate:
                         self.logger.error(f"No document found for record {recnumber}")
                         return recnumber, None
                     context = document_row[self.content_column].iloc[0]
-                else:
+                elif screening_type == 'screening2':
                     # screening2
                     # Load the Chroma index for this PDF
                     # recnumber = records_to_process[0]
@@ -482,6 +487,9 @@ class academate:
 
                     # Extract page content from unique retrieved documents
                     context = "\n\n".join([doc.page_content for doc in unique_docs])
+
+                else:
+                    raise ValueError(f"Invalid screening type: {screening_type}")
 
                 inputs = {
                     "context": context,
@@ -535,6 +543,7 @@ class academate:
         tasks = []
         for recnumber in records_to_process:
             # print(recnumber)
+            # task=recnumber
             task = asyncio.create_task(process_with_semaphore(recnumber))
             tasks.append(task)
 
@@ -601,17 +610,27 @@ class academate:
         df.reset_index(inplace=True, drop=True)
         return df, missing_keys
 
-    def base_screening(self, screening_type='screening1'):
+    def base_screening(self, screening_type):
         # Prepare prompt and other settings
         self.prompt, self.formatted_criteria, self.json_structure = self.prepare_screening_prompt()
 
         # Load existing screening data
-        self.load_existing_screening_data(screening_type)
-        record2answer = getattr(self, f"{screening_type}_record2answer")
-        missing_records = getattr(self, f"{screening_type}_missing_records")  # Get missing_records
+        self.load_existing_screening_data(screening_type=screening_type)
+        record2answer_attr = f"{screening_type}_record2answer"
+        missing_records_attr = f"{screening_type}_missing_records"
+
+        record2answer = getattr(self, record2answer_attr)
+        missing_records = getattr(self, missing_records_attr)
+
+        # --- Filter uniqueids based on current literature_df ---
+        current_uniqueids = set(self.get_rec_numbers(screening_type=screening_type))
+        record2answer = {k: v for k, v in record2answer.items() if k in current_uniqueids}
+        missing_records = {rec for rec in missing_records if rec in current_uniqueids}
+        setattr(self, record2answer_attr, record2answer)
+        setattr(self, missing_records_attr, missing_records)
 
         # Determine records to process
-        records_to_process = [rec for rec in self.get_rec_numbers(screening_type) if rec not in record2answer]
+        records_to_process = [rec for rec in self.get_rec_numbers(screening_type=screening_type) if rec not in record2answer]
 
         # Add missing records to records_to_process
         for rec in missing_records:
@@ -627,7 +646,7 @@ class academate:
         chain = self.prepare_chain()
 
         # Run the asynchronous processing
-        results = asyncio.run(self.process_records_concurrently(records_to_process, chain, screening_type))
+        results = asyncio.run(self.process_records_concurrently(records_to_process=records_to_process, chain=chain, screening_type=screening_type))
 
         # Display final summary
         total_records = len(records_to_process)
@@ -678,17 +697,21 @@ class academate:
                 raise ValueError(
                     "Either run_screening1() must be called before run_screening2() or 'pdf_path' column must be provided in the initial DataFrame.")
             else:
-                print("Using provided PDF paths for screening2.")
+                self.logger.info("Using provided PDF paths for screening2.")
                 self.results_screening2 = self.literature_df.copy()
         else:
             if 'predicted_screening1' not in self.results_screening1.columns:
-                print("Warning: 'predicted_screening1' column not found. Using all records for screening2.")
+                self.logger.warning("Warning: 'predicted_screening1' column not found. Using all records for screening2.")
                 self.results_screening2 = self.results_screening1.copy()
             else:
                 self.results_screening2 = self.results_screening1[
                     self.results_screening1['predicted_screening1'] == True]
 
         self.logger.info(f"Records selected for PDF processing: {len(self.results_screening2)}")
+        self.logger.debug("DEBUG: results_screening2 before embed_articles_PDFs:")
+        self.logger.debug(self.results_screening2[['uniqueid', 'pdf_path']])
+        # print("DEBUG: Unique IDs in results_screening2:", self.results_screening2['uniqueid'].unique())
+        self.logger.debug(f"Number of unique IDs: {len(self.results_screening2['uniqueid'].unique())}")
 
         # If PDFs are not already downloaded, download them
         if 'pdf_path' not in self.results_screening2.columns or self.results_screening2['pdf_path'].isnull().any():
@@ -701,7 +724,8 @@ class academate:
             asyncio.run(self.embed_articles_PDFs())
 
         # Filter out records where PDF is not available
-        self.results_screening2 = self.results_screening2[self.results_screening2['pdf_path'].notna()]
+
+        self.results_screening2 = self.results_screening2[~self.results_screening2['uniqueid'].isin(self.screening2_PDFembedding_error)]
 
         self.logger.info(f"Records with PDF proceeding for screening2: {len(self.results_screening2)}")
 
@@ -715,6 +739,7 @@ class academate:
             self.results_screening2.rename(columns={key: key + '_scr2' for key in self.criteria_dict.keys()},
                                            inplace=True)
             self.results_screening2.rename(columns={'predicted_screening': 'predicted_screening2'}, inplace=True)
+
         else:
             print("No PDFs were successfully processed. Skipping screening2.")
 
@@ -764,8 +789,10 @@ class academate:
     def merge_results(self, df, screening_type):
         if screening_type == 'screening1':
             return self.literature_df.merge(df, on='uniqueid', how='right')
-        else:  # screening2
+        elif screening_type == 'screening2':
             return self.results_screening2.merge(df, on='uniqueid', how='right')
+        else:
+            raise ValueError(f"Invalid screening type: {screening_type}")
 
     def analyze_model_output(self, screening_type):
         all_keys = set()
@@ -832,21 +859,6 @@ class academate:
             f"Total download/access errors: {len(self.screening2_PDFdownload_error)}"
         )
 
-        return self.results_screening2
-
-    def find_record_doi(self, df: pd.DataFrame = None):
-        """
-        Modified to use ArticleDownloader's DOI finding functionality
-        """
-        if df is not None:
-            working_df = df.copy()
-        else:
-            working_df = self.results_screening2.copy()
-
-        # Use ArticleDownloader to find DOIs
-        working_df = self.article_downloader.find_dois(working_df)
-
-        self.results_screening2 = working_df
         return self.results_screening2
 
     # OBTAIN PDF DATA
@@ -933,7 +945,7 @@ class academate:
             metadata = {k: str(v) for k, v in pdf_record.to_dict().items()}
             for doc in documents:
                 doc.metadata.update(metadata)
-            ## CHANGE PDF COLLECTION NAME
+
             # Set up the Chroma database path
             path_name = f"{self.embeddings_path2}/pdf_{uniqueid}"
             await self.ensure_directory_permissions(path_name)
@@ -943,6 +955,8 @@ class academate:
 
             if is_valid_db:
                 self.logger.debug(f"Using existing Chroma index for article {uniqueid}")
+                # Remove from error set upon success
+                self.screening2_PDFembedding_error.discard(uniqueid)
                 return Chroma(
                     collection_name=f"pdf_{uniqueid}",
                     persist_directory=path_name,
@@ -969,6 +983,8 @@ class academate:
                         await asyncio.sleep(0.1)  # Prevent database locking
 
                     self.logger.debug(f"Successfully embedded article {uniqueid}")
+                    # Remove from error set upon successful embedding
+                    self.screening2_PDFembedding_error.discard(uniqueid)
                     return pdf_db
 
                 except sqlite3.OperationalError as e:
@@ -979,15 +995,15 @@ class academate:
                     raise
                 except Exception as e:
                     raise RuntimeError(f"Database operation failed: {str(e)}")
-
         except Exception as e:
-            self.logger.error(f"Error processing PDF {uniqueid}: {str(e)}")
+            self.logger.error(f"Error embedding {uniqueid}: {e}")
             self.screening2_PDFembedding_error.add(uniqueid)
             return None
 
     async def get_embedded_pdfs(self):
         """
-        Returns a set of uniqueids for successfully embedded PDFs with validation.
+        Returns a set of uniqueids for successfully embedded PDFs with validation,
+        but only for the uniqueids needed in screening 2.
         """
         embedded_pdfs = set()
 
@@ -997,16 +1013,16 @@ class academate:
                 self.logger.warning(f"Embeddings directory does not exist: {base_path}")
                 return embedded_pdfs
 
-            for item in os.listdir(base_path):
-                if item.startswith('pdf_'):
-                    pdf_id = item.replace('pdf_', '')
-                    path_name = os.path.join(base_path, item)
+            # Check only for the uniqueids needed in screening 2
+            for uniqueid in self.results_screening2['uniqueid'].astype(str):
+                path_name = os.path.join(base_path, f"pdf_{uniqueid}")
+                # self.logger.debug(f"Checking uniqueid: {uniqueid}, Path: {path_name}")  # Add this
 
-                    # Validate the database
-                    if await self.validate_chroma_db(path_name, f"pdf_{pdf_id}"):
-                        embedded_pdfs.add(pdf_id)
-                    else:
-                        self.logger.warning(f"Invalid or corrupted database found for PDF {pdf_id}")
+                # Validate the database
+                if await self.validate_chroma_db(path_name, f"pdf_{uniqueid}"):
+                    embedded_pdfs.add(uniqueid)
+                else:
+                    self.logger.debug(f"Invalid or missing database for PDF {uniqueid}")   # Changed to debug level
 
         except Exception as e:
             self.logger.error(f"Error scanning embedded PDFs: {str(e)}")
@@ -1039,29 +1055,53 @@ class academate:
             else:
                 self.screening2_PDFembedding_error = set()
 
-            # Get already embedded PDFs
+            # --- Debugging: Check for duplicates in results_screening2 ---
+            num_duplicates = self.results_screening2['uniqueid'].duplicated().sum()
+            if num_duplicates > 0:
+                self.logger.warning(f"Found {num_duplicates} duplicate unique IDs in results_screening2")
+            # ---
+
+            # Get already embedded PDFs (only for the relevant uniqueids)
+            # Get already embedded PDFs (vector DB entries) for the relevant unique IDs
             embedded_pdfs = await self.get_embedded_pdfs()
             self.logger.info(f"Found {len(embedded_pdfs)} already embedded PDFs")
+
+            # --- Count uniqueids before filtering ---
+            total_uniqueids_in_screening2 = len(self.results_screening2['uniqueid'].unique())
+            self.logger.info(f"Total unique IDs in screening2 results: {total_uniqueids_in_screening2}")
+            self.logger.info(
+                f"Found {len(embedded_pdfs)} already embedded PDFs (out of {total_uniqueids_in_screening2} in screening2)"
+            )
+            # ---
 
             # Filter records needing processing
             records_to_process = []
             for _, record in self.results_screening2.iterrows():
                 uniqueid = str(record['uniqueid'])
 
-                # Skip if already successfully embedded
-                if uniqueid in embedded_pdfs and uniqueid not in self.screening2_PDFembedding_error:
+                # FIRST: Check if a vector DB entry already exists
+                if uniqueid in embedded_pdfs:
+                    self.logger.debug(f"Skipping uniqueid {uniqueid} because it already has a vector DB entry.")
                     continue
 
-                # Skip if PDF is invalid
+                # SECOND: Check for a valid PDF path
                 if pd.isna(record['pdf_path']) or not os.path.exists(record['pdf_path']):
                     self.screening2_PDFembedding_error.add(uniqueid)
+                    self.logger.debug(f"Adding uniqueid {uniqueid} to error set because of invalid PDF path.")
                     continue
+
+                # THIRD (optional): If you want to retry those that were marked as errors before,
+                # you could log that here—but since they aren’t in embedded_pdfs, they can be reprocessed.
+                if uniqueid in self.screening2_PDFembedding_error:
+                    self.logger.debug(f"Reprocessing uniqueid {uniqueid} from error set.")
 
                 records_to_process.append(record)
 
             if not records_to_process:
                 self.logger.info("No new PDFs to embed")
                 return
+
+            self.logger.info(f"Number of unique IDs to be processed: {len(records_to_process)}")
 
             # Process PDFs with controlled concurrency
             sem = asyncio.Semaphore(5)
@@ -1129,6 +1169,80 @@ class academate:
         fig = self.visualizer.plot_vector_DB(self.vectorDB_screening1)
         return fig
 
+    def merge_screening2_vector_dbs(self):
+        """
+        Merges all individual PDF Chroma vector DBs (for screening2) that passed screening2
+        into a single merged Chroma index. This function skips any article that is already
+        incorporated into the merged DB so that the code is safe to run multiple times.
+
+        Returns:
+            merged_db (Chroma): A merged Chroma index containing all new documents from the individual PDF DBs.
+        """
+        import tqdm
+
+        # Directory for the merged DB
+        merged_db_path = os.path.join(self.embeddings_path2, "merged_screening2")
+        os.makedirs(merged_db_path, exist_ok=True)
+
+        # Initialize the merged Chroma index
+        merged_db = Chroma(
+            collection_name="screening2_merged",
+            persist_directory=merged_db_path,
+            embedding_function=self.embeddings
+        )
+
+        # Retrieve already merged unique IDs from the merged DB.
+        existing = merged_db._collection.get(include=["metadatas"])
+        existing_uniqueids = set()
+        for metadata in existing.get("metadatas", []):
+            if metadata and "uniqueid" in metadata:
+                existing_uniqueids.add(metadata["uniqueid"])
+
+        self.logger.info(f"{len(existing_uniqueids)} article(s) already merged.")
+
+        # Get all screening2 unique IDs (as strings)
+        screening_uniqueids = self.results_screening2['uniqueid'].astype(str).unique()
+
+        # Process with a progress bar
+        new_count = 0
+        for uniqueid in tqdm.tqdm(screening_uniqueids, desc="Merging screening2 DBs"):
+            if uniqueid in existing_uniqueids:
+                continue
+
+            pdf_dir = os.path.join(self.embeddings_path2, f"pdf_{uniqueid}")
+            if not os.path.exists(pdf_dir):
+                self.logger.warning(f"Directory for PDF {uniqueid} does not exist. Skipping.")
+                continue
+
+            # Validate the individual PDF vector DB (calling the async validator in sync context)
+            valid = asyncio.run(self.validate_chroma_db(pdf_dir, f"pdf_{uniqueid}"))
+            if not valid:
+                self.logger.warning(f"Chroma DB for PDF {uniqueid} is not valid. Skipping.")
+                continue
+
+            # Load the individual PDF vector DB
+            pdf_db = Chroma(
+                collection_name=f"pdf_{uniqueid}",
+                persist_directory=pdf_dir,
+                embedding_function=self.embeddings
+            )
+
+            # Retrieve stored documents and metadata
+            results = pdf_db._collection.get(include=["documents", "metadatas"])
+            docs = results.get("documents", [])
+            metadatas = results.get("metadatas", [])
+            if docs and metadatas:
+                merged_db.add_texts(docs, metadatas=metadatas)
+                new_count += 1
+                self.logger.info(f"Merged {len(docs)} doc(s) from PDF {uniqueid}.")
+            else:
+                self.logger.warning(f"No documents found in PDF {uniqueid}.")
+
+        # Remove the persist() call since it is not available.
+        self.logger.info(f"Finished merging. Added {new_count} new article(s).")
+        self.logger.info(f"Merged screening2 vector DB is located at: {merged_db_path}")
+        return merged_db
+
     def create_PRISMA_visualization(self, save_results=True):
         """
         Visualizes the PRISMA flow diagram based on the screening results.
@@ -1194,8 +1308,9 @@ class academate:
             row = {'uniqueid': uniqueid}
             for criterion in self.criteria_dict.keys():
                 if criterion in answers:
-                    label = answers[criterion].get('label', None)
-                    reason = answers[criterion].get('reason', None)
+                    # Directly access 'label' and 'reason' without .get()
+                    label = answers[criterion]['label'] if isinstance(answers[criterion], dict) else answers[criterion]
+                    reason = answers[criterion]['reason'] if isinstance(answers[criterion], dict) else None
                 else:
                     label = None
                     reason = None
@@ -1247,6 +1362,8 @@ class academate:
         # Add 'predicted_screening' at the end if it exists
         if 'predicted_screening' in merged_df.columns:
             paired_cols.append('predicted_screening')
+        elif f'predicted_{screening_type}' in merged_df.columns: # Add this to account for different screening type names
+            paired_cols.append(f'predicted_{screening_type}')
 
         # Combine all columns in desired order
         merged_df = merged_df[base_cols + paired_cols]
@@ -1280,7 +1397,7 @@ class academate:
                 col_idx = merged_df.columns.get_loc(col)
                 col_letter = xlsxwriter.utility.xl_col_to_name(col_idx)
                 last_row = len(merged_df)
-                if col.endswith('_label') or col == 'predicted_screening':
+                if col.endswith('_label') or col == f'predicted_{screening_type}':
                     worksheet.set_column(col_idx, col_idx, 15)
                     worksheet.conditional_format(
                         f'{col_letter}2:{col_letter}{last_row + 1}',
@@ -1303,3 +1420,28 @@ class academate:
             worksheet.freeze_panes(1, 0)
 
         print(f"Excel report saved to {filename}")
+
+    def chatbot(self):
+        """
+        Launches the chatbot interface for interacting with the screening results.
+        """
+
+        # Assume academate_instance is your academate object, and it has an attribute `llm`
+        chat_app = ChatbotApp(llm=self.llm)
+        self.vectorDB_screening2 = self.merge_screening2_vector_dbs()
+
+        retriever = self.vectorDB_screening2.as_retriever(
+            search_type="mmr",
+            search_kwargs={
+                'score_threshold': 0.0,
+                'fetch_k': 10,
+                'k': 20
+            }
+        )
+        prompt = "Costs and utilities of manual therapy and orthopedic standard care for low-prioritized orthopedic outpatients of working age: a cost consequence analysis"
+        inputs = {
+            "question": prompt,  # or the user question
+            "retriever": retriever,
+        }
+
+        final_state = chat_app.invoke(inputs)
