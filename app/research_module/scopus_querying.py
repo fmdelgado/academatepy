@@ -242,54 +242,58 @@ class ScopusQueryGenerator:
             "query": query,
             "start": 0,
             "count": 25,  # Increased batch size
-            "view": "STANDARD" # View options: STANDARD, COMPLETE
+            "view": "STANDARD"  # View options: STANDARD, COMPLETE
         }
-
+    
         self.logger.info(f"Executing async query: {query}")
-
+    
         articles = []
-        total_results = 0
-
         async with aiohttp.ClientSession() as session:
-            tasks = []
             while len(articles) < max_results:
-                task = asyncio.ensure_future(self.fetch_batch(session, self.base_url, headers, params))
-                tasks.append(task)
-                responses = await asyncio.gather(*tasks)
-                tasks = []
-
-                for data in responses:
-                    if data:
-                        entries = data.get('search-results', {}).get('entry', [])
-                        for entry in entries:
-                            articles.append({
-                                'Title': entry.get('dc:title', ''),
-                                'Authors': entry.get('dc:creator', ''),
-                                'Year': entry.get('prism:coverDate', '')[:4],
-                                'DOI': entry.get('prism:doi', ''),
-                                'Abstract': entry.get('dc:description', ''),
-                                'Source': entry.get('prism:publicationName', ''),
-                                'EID': entry.get('eid', ''),
-                                'URL': entry.get('link', [{}])[0].get('@href', '')
-                            })
-
-                        total_results = int(data.get('search-results', {}).get('opensearch:totalResults', '0'))
-                        self.logger.info(f"Retrieved {len(entries)} entries. Total results: {total_results}")
-
-                        # Check if we've retrieved enough results or if there are no more results
-                        if len(articles) >= max_results or len(entries) == 0:
-                            break
-
-                        # Update the starting index for the next request
-                        params['start'] += params['count']
-
-                        # Adjust count if approaching max_results
-                        if len(articles) + params['count'] > max_results:
-                            params['count'] = max_results - len(articles)
-                    else:
-                        break
-
+                # Fetch a batch of results
+                data = await self.fetch_batch(session, self.base_url, headers, params)
+                
+                if not data:
+                    self.logger.warning("No response received. Stopping the loop.")
+                    break
+                
+                # Extract entries from the response
+                entries = data.get('search-results', {}).get('entry', [])
+                if len(entries) == 0:
+                    self.logger.info("No more entries found. Stopping the loop.")
+                    break
+                
+                # Add entries to the articles list
+                for entry in entries:
+                    articles.append({
+                        'Title': entry.get('dc:title', ''),
+                        'Authors': entry.get('dc:creator', ''),
+                        'Year': entry.get('prism:coverDate', '')[:4],
+                        'DOI': entry.get('prism:doi', ''),
+                        'Abstract': entry.get('dc:description', ''),
+                        'Source': entry.get('prism:publicationName', ''),
+                        'EID': entry.get('eid', ''),
+                        'URL': entry.get('link', [{}])[0].get('@href', '')
+                    })
+    
+                # Log progress
+                total_results = int(data.get('search-results', {}).get('opensearch:totalResults', '0'))
+                self.logger.info(f"Retrieved {len(entries)} entries. Total results: {total_results}")
+    
+                # Check if we've retrieved enough results
+                if len(articles) >= max_results:
+                    break
+                
+                # Update the starting index for the next request
+                params['start'] += params['count']
+    
+                # Adjust count if approaching max_results
+                if len(articles) + params['count'] > max_results:
+                    params['count'] = max_results - len(articles)
+    
+        # Store results in a DataFrame
         self.results = pd.DataFrame(articles[:max_results])
+
 
     def execute_query(self, query: str, max_results: int = 10000) -> None:
         """

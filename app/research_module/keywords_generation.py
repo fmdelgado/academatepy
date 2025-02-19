@@ -1,7 +1,3 @@
-import requests
-import pandas as pd
-import re
-import json
 import logging
 
 class KeywordsGenerator:
@@ -42,12 +38,9 @@ class KeywordsGenerator:
         1. Identify the main concepts in the topic.
         2. For each concept, include synonyms and related terms.
         3. Use the exact template below to format your response. Do not deviate from this structure.
-        4. Make the keywords suitable for the following search terms:
-            - PubMed ((("term1"[Title/Abstract] OR "term1 synonym"[Title/Abstract] OR "Term1 MeSH"[MeSH Terms]) AND ("term2"[Title/Abstract] OR "term2 synonym"[Title/Abstract] OR "Term2 MeSH"[MeSH Terms])))
-            - Semantic Scholar ("term1" | "term1 synonym" | "term1 related term") + ("term2" | "term2 synonym")
-            - Scopus(TITLE-ABS-KEY("term1" OR "term1 synonym") AND TITLE-ABS-KEY("term2" OR "term2 synonym"))
-        5. Remove keywords which are not needed for search results.
-        6. Return only filled out sections of the template.
+        4. Limit yourself to 3-5 main keywords.
+        5. Include 3-5 synonyms for each main keyword.
+        6. Do not include any additional information or context.
 
         **Example of a correct response:**
         <START_OUTPUT>
