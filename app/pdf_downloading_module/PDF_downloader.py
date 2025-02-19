@@ -296,6 +296,7 @@ class ArticleDownloader:
         ]
 
         for method_name, method in download_methods:
+            # print("method_name", method_name)
             for attempt in range(retries):
                 try:
                     pdf_path = method(doi, str(expected_pdf_path))
@@ -414,7 +415,7 @@ class ArticleDownloader:
 
                         for method_name, method in download_methods:
                             try:
-                                pdf_path = method(doi, pdf_path)
+                                pdf_path = method(doi=doi, pdf_path=pdf_path)
                                 if pdf_path and os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 0:
                                     self.logger.info(f"Successfully downloaded {doi} using {method_name}")
                                     return pdf_path
