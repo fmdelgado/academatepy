@@ -53,6 +53,23 @@ class ArticleDownloader:
         # Initialize error tracking
         self.download_errors = {}
         self.pdf_download_error = set()  # Compatible with academate's screening2_PDFdownload_error
+        
+        # Check if paper-downloader is installed
+        self.paper_downloader_available = self.is_tool("pd")
+        if self.paper_downloader_available:
+            self.logger.info("paper-downloader is available and will be used")
+        else:
+            self.logger.warning("paper-downloader is not available. Install with 'pip install paper-downloader'")
+            
+        # Check if pubmed2pdf is installed
+        try:
+            import importlib
+            importlib.import_module('pubmed2pdf')
+            self.pubmed2pdf_available = True
+            self.logger.info("pubmed2pdf is available and will be used")
+        except ImportError:
+            self.pubmed2pdf_available = False
+            self.logger.warning("pubmed2pdf is not available. Install with 'pip install pubmed2pdf'")
 
     @staticmethod
     def is_valid_doi(doi: str) -> bool:
@@ -288,15 +305,23 @@ class ArticleDownloader:
             self.logger.info(f"PDF already exists for {doi}")
             return str(expected_pdf_path)
 
+        # Define download methods in order of preference
         download_methods = [
             ('unpaywall', self._download_unpaywall),
             ('paperscraper', self._download_paperscraper),
+        ]
+        
+        # Add paper-downloader if available
+        if self.paper_downloader_available:
+            download_methods.append(('paper-downloader', self._download_paper_downloader))
+            
+        # Add remaining methods
+        download_methods.extend([
             ('doi2pdf', self._download_doi2pdf),
             ('scihub', self._download_scihub)
-        ]
+        ])
 
         for method_name, method in download_methods:
-            # print("method_name", method_name)
             for attempt in range(retries):
                 try:
                     pdf_path = method(doi, str(expected_pdf_path))
@@ -391,6 +416,45 @@ class ArticleDownloader:
         Returns:
             Optional[str]: The path to the downloaded PDF, or None if the download failed.
         """
+        # First try using pubmed2pdf if available
+        if self.pubmed2pdf_available:
+            try:
+                self.logger.info(f"Attempting to download PMID {pmid} using pubmed2pdf")
+                import pubmed2pdf.core as p2p
+                
+                # Create a temporary directory for pubmed2pdf output
+                temp_dir = os.path.join(self.output_directory, f"__temp_pubmed2pdf_{pmid}")
+                os.makedirs(temp_dir, exist_ok=True)
+                
+                # Run pubmed2pdf
+                result = p2p.download_pdfs(
+                    pmids=[pmid],
+                    out_dir=temp_dir,
+                    delete_txt=True,
+                    verbose=self.verbose
+                )
+                
+                # Check if download was successful
+                downloaded_files = [f for f in os.listdir(temp_dir) if f.endswith('.pdf')]
+                if downloaded_files:
+                    downloaded_pdf = os.path.join(temp_dir, downloaded_files[0])
+                    # Copy to the expected location
+                    shutil.copy2(downloaded_pdf, pdf_path)
+                    # Clean up temporary directory
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                    
+                    if os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 0:
+                        self.logger.info(f"Successfully downloaded PDF for PMID {pmid} using pubmed2pdf")
+                        return pdf_path
+                
+                # Clean up if download failed
+                shutil.rmtree(temp_dir, ignore_errors=True)
+                self.logger.warning(f"pubmed2pdf failed to download PDF for PMID {pmid}")
+                
+            except Exception as e:
+                self.logger.error(f"Error using pubmed2pdf for PMID {pmid}: {e}")
+        
+        # Fall back to the original method if pubmed2pdf fails or is not available
         try:
             # Fetch the Entrez record for the PMID
             handle = Entrez.efetch(db="pubmed", id=pmid, retmode="xml", email=self.email)
@@ -409,6 +473,7 @@ class ArticleDownloader:
                         download_methods = [
                             ('unpaywall', self._download_unpaywall),
                             ('paperscraper', self._download_paperscraper),
+                            ('paper-downloader', self._download_paper_downloader),
                             ('doi2pdf', self._download_doi2pdf),
                             ('scihub', self._download_scihub)
                         ]
@@ -432,7 +497,7 @@ class ArticleDownloader:
             self.logger.error(f"Error downloading with PMID {pmid}: {e}")
             return None
 
-    def process_dataframe(self, df: pd.DataFrame, checkpoint_file: Optional[str] = None) -> pd.DataFrame:
+    def process_dataframe(self, df: pd.DataFrame, checkpoint_file: Optional[str] = None, callback=None) -> pd.DataFrame:
         """
         Processes a DataFrame to find DOIs and download PDFs, with persistent state across runs.
         Also, deduplicates the DataFrame based on 'record', keeping the most complete row.
@@ -440,6 +505,7 @@ class ArticleDownloader:
         Args:
             df (pd.DataFrame): DataFrame with article information.
             checkpoint_file (Optional[str]): Path to save a checkpoint pickle file.
+            callback (Optional[callable]): Callback function to update download statistics.
 
         Returns:
             pd.DataFrame: Updated DataFrame with DOI, PDF path, and download status.
@@ -454,6 +520,24 @@ class ArticleDownloader:
         # Convert columns to appropriate types
         df['download_attempt'] = df['download_attempt'].fillna(0).astype('Int64')
         df['downloaded'] = df['downloaded'].fillna(False).astype(bool)
+
+        # Check for uniqueid column - required for processing
+        if 'uniqueid' not in df.columns:
+            self.logger.info("Adding uniqueid column to dataframe")
+            # Create a uniqueid based on DOI or title or a combination of available fields
+            def generate_uniqueid(row):
+                if pd.notna(row.get('doi')):
+                    return f"doi_{row['doi'].replace('/', '_')}"
+                elif pd.notna(row.get('title')):
+                    # Use first 50 chars of title, lowercase, and replace spaces with underscores
+                    title_part = str(row['title']).lower()[:50].replace(' ', '_')
+                    return f"title_{title_part}"
+                else:
+                    # Use index as a last resort
+                    return f"index_{row.name}"
+            
+            df['uniqueid'] = df.apply(generate_uniqueid, axis=1)
+            self.logger.info(f"Generated {len(df)} unique IDs")
 
         # Load checkpoint if it exists
         if checkpoint_file and os.path.exists(checkpoint_file):
@@ -488,58 +572,77 @@ class ArticleDownloader:
         if 'pmid' not in df.columns or df['pmid'].isna().any():
             df = self.find_pmids(df)
 
+        # Count how many PMIDs we have
+        pmid_count = df['pmid'].notna().sum()
+        self.logger.info(f"Found PMID in column 'download_attempt': {pmid_count}")
+
         # Process each article
         total_articles = len(df)
         with tqdm(total=total_articles, desc="Processing articles") as pbar:
-            for idx, row in df.iterrows():
-                uniqueid = str(row['uniqueid'])
+            # Store pbar in callback if provided
+            if callback:
+                callback.pbar = pbar
+                
+                for idx, row in df.iterrows():
+                    uniqueid = str(row['uniqueid'])
 
-                # Skip if PDF exists (and has content) or if it has already been downloaded successfully
-                if (not pd.isna(row['pdf_path']) and os.path.exists(row['pdf_path']) and os.path.getsize(
-                        row['pdf_path']) > 0) or row['downloaded'] == True:
+                    # Skip if PDF exists (and has content) or if it has already been downloaded successfully
+                    if (not pd.isna(row['pdf_path']) and os.path.exists(row['pdf_path']) and os.path.getsize(
+                            row['pdf_path']) > 0) or row['downloaded'] == True:
+                        pbar.update()
+                        continue
+
+                    # Skip if DOI is invalid and PMID is not available
+                    if (pd.isna(row['doi']) or row['doi'] == 'DOI not found') and pd.isna(row['pmid']):
+                        df.at[idx, 'error_message'] = 'Invalid DOI and no PMID available'
+                        self.pdf_download_error.add(uniqueid)
+                        if callback:
+                            callback(False, uniqueid)
+                        pbar.update()
+                        continue
+
+                    # If download_attempt is NA (new row), initialize it to 0
+                    if pd.isna(row['download_attempt']):
+                        df.at[idx, 'download_attempt'] = 0
+
+                    # Increment the download attempt counter
+                    df.at[idx, 'download_attempt'] += 1
+
+                    # Try downloading with DOI first if available
+                    pdf_path = None
+                    if not pd.isna(row['doi']) and row['doi'] != 'DOI not found':
+                        pdf_path = self.download_article(row['doi'])
+
+                    # If DOI download failed, try downloading using PMID
+                    if not pdf_path and pd.notna(row['pmid']):
+                        self.logger.info(f"Attempting download with PMID: {row['pmid']}")
+                        expected_filename = f"pmid_{row['pmid']}.pdf"
+                        expected_pdf_path = os.path.join(self.output_directory, expected_filename)
+                        pdf_path = self._download_pubmed(row['pmid'], expected_pdf_path)
+
+                    # Update DataFrame based on download outcome
+                    if pdf_path:
+                        df.at[idx, 'downloaded'] = True
+                        df.at[idx, 'pdf_path'] = pdf_path
+                        df.at[idx, 'pdf_name'] = os.path.basename(pdf_path)
+                        self.pdf_download_error.discard(uniqueid)
+                        if callback:
+                            callback(True, uniqueid)
+                    else:
+                        df.at[idx, 'downloaded'] = False
+                        error_msg = str(self.download_errors.get(row.get('doi', ''), []))
+                        df.at[idx, 'error_message'] = error_msg if error_msg else "Download failed with all methods"
+                        self.pdf_download_error.add(uniqueid)
+                        if callback:
+                            callback(False, uniqueid)
+
+                    # Save checkpoint if specified
+                    if checkpoint_file and idx % 10 == 0:
+                        df.to_pickle(checkpoint_file)
+
+                    # Update progress bar description
+                    pbar.set_postfix({"Valid PDFs": f"{self.count_valid_pdfs(df)}/{total_articles}"}, refresh=False)
                     pbar.update()
-                    continue
-
-                # Skip if DOI is invalid
-                if pd.isna(row['doi']) or row['doi'] == 'DOI not found':
-                    df.at[idx, 'error_message'] = 'Invalid DOI'
-                    self.pdf_download_error.add(uniqueid)
-                    pbar.update()
-                    continue
-
-                # If download_attempt is NA (new row), initialize it to 0
-                if pd.isna(row['download_attempt']):
-                    df.at[idx, 'download_attempt'] = 0
-
-                # Increment the download attempt counter
-                df.at[idx, 'download_attempt'] += 1
-
-                # Download the article PDF using DOI
-                pdf_path = self.download_article(row['doi'])
-
-                # If DOI download failed, try downloading using PMID
-                if not pdf_path and pd.notna(row['pmid']):
-                    self.logger.info(f"Attempting download with PMID: {row['pmid']}")
-                    pdf_path = self._download_pubmed(row['pmid'], row['pdf_path'])
-
-                # Update DataFrame based on download outcome
-                if pdf_path:
-                    df.at[idx, 'downloaded'] = True
-                    df.at[idx, 'pdf_path'] = pdf_path
-                    df.at[idx, 'pdf_name'] = os.path.basename(pdf_path)
-                    self.pdf_download_error.discard(uniqueid)
-                else:
-                    df.at[idx, 'downloaded'] = False
-                    df.at[idx, 'error_message'] = str(self.download_errors.get(row['doi'], []))
-                    self.pdf_download_error.add(uniqueid)
-
-                # Save checkpoint if specified
-                if checkpoint_file and idx % 10 == 0:
-                    df.to_pickle(checkpoint_file)
-
-                # Update progress bar description
-                pbar.set_postfix({"Valid PDFs": f"{self.count_valid_pdfs(df)}/{total_articles}"}, refresh=False)
-                pbar.update()
 
         # Perform cleanup of the output directory after all download attempts
         self.cleanup_output_directory(df)
@@ -549,8 +652,51 @@ class ArticleDownloader:
         total_articles = len(df)
         print(f"Successfully downloaded and validated PDFs: {valid_pdf_count} out of {total_articles}")
 
-        # Deduplicate the DataFrame based on 'record' after processing
+        # Deduplicate the DataFrame based on 'uniqueid' after processing
         df = self.deduplicate_dataframe(df)
 
         return df
+
+    def _download_paper_downloader(self, doi: str, pdf_path: str) -> Optional[str]:
+        """Download using paper-downloader tool."""
+        try:
+            # Create a temporary directory for paper-downloader output
+            temp_dir = os.path.join(self.output_directory, "__temp_pd__")
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            # Set up environment variables for paper-downloader
+            env = os.environ.copy()
+            env["PAPER_DOWNLOADER_DOI"] = doi
+            env["PAPER_DOWNLOADER_OUTPUT"] = temp_dir
+            
+            # Run paper-downloader
+            self.logger.info(f"Running paper-downloader for DOI: {doi}")
+            result = subprocess.run(
+                ["pd", "--doi", doi, "--output", pdf_path],
+                capture_output=True,
+                text=True,
+                env=env,
+                timeout=60  # 60 second timeout
+            )
+            
+            # Check if the command was successful
+            if result.returncode == 0:
+                # Check if the file exists and has content
+                if os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 0:
+                    self.logger.info(f"paper-downloader successfully downloaded {doi}")
+                    return pdf_path
+                else:
+                    self.logger.error(f"paper-downloader command succeeded but no PDF was found for {doi}")
+            else:
+                self.logger.error(f"paper-downloader failed with error: {result.stderr}")
+                
+            # Clean up temporary directory
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            
+        except subprocess.TimeoutExpired:
+            self.logger.error(f"paper-downloader timed out for DOI: {doi}")
+        except Exception as e:
+            raise Exception(f"paper-downloader download failed: {e}")
+        
+        return None
 

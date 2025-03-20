@@ -209,6 +209,7 @@ def process_review(review, screening_type, criteria_threshold=None):
 
     if screening_type == 'screening2':
         og_df = og_df[og_df.screening1 == True].copy()
+        og_df = og_df[og_df['pdf_name'] != 'NO PAPER AVAILABLE.pdf']
 
     # First, collect all the data
     total_records = len(og_df)
@@ -243,6 +244,7 @@ def process_review(review, screening_type, criteria_threshold=None):
             y_true = detailed_df[screening_type]
             y_pred = detailed_df[f'predicted_{screening_type}']
             analyzed_records = len(predicted_criteria)
+
             resdict = calculate_performance_metrics(y_true, y_pred, total_records, analyzed_records)
             resdict['model'] = model
             resdict['total_records'] = total_records
@@ -311,223 +313,232 @@ def compute_criteria_pearson_correlation(predcrit_dict, screening_type, config):
                 })
     return pd.DataFrame(results)
 
-
-
-def plot_performance_metrics_grouped(df_results, metrics, model_order, save_path=None, dpi=300):
+def plot_performance_metrics_grouped(
+    df_results, metrics, model_order, save_path=None, dpi=300,
+    custom_colors=None, plot_title=None, add_value_labels=True,
+    fig_width=12, fig_height=8
+):
     """
     Creates performance metric plots for comparing model performance
     across different screenings and reviews (grouped bar plot).
-
-    Args:
-        df_results (pd.DataFrame): Combined performance results. It should have at least the columns
-            'model', 'screening_type', and optionally 'reviewname' (if multiple reviews are present),
-            along with the metric columns.
-        metrics (list): List of metric column names to plot.
-        save_path (str, optional): Path to save the plot.
-        dpi (int): Resolution for saved figure.
+    Matches the style of the provided example with consistent colors and spacing.
     """
-    # Style settings
-    plt.style.use('default')
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
+    # Set up enhanced plotting style
     plt.rcParams.update({
-        'font.size': 11,
-        'font.family': 'sans-serif',
-        'axes.labelsize': 12,
-        'axes.titlesize': 13,
+        'font.family': 'Arial',
+        'font.size': 12,
+        'axes.labelsize': 14,
+        'axes.titlesize': 16,
         'xtick.labelsize': 10,
-        'ytick.labelsize': 10,
-        'legend.fontsize': 10,
-        'figure.dpi': dpi
+        'ytick.labelsize': 12,
+        'legend.fontsize': 11,
+        'axes.grid': True,
+        'grid.alpha': 0.2,
+        'axes.facecolor': '#ffffff',
+        'figure.facecolor': '#ffffff',
     })
-
-    # If a reviewname column exists, create a new combined column "screening_review"
-    if 'reviewname' in df_results.columns:
-        df_results['screening_review'] = df_results['screening_type'] + '_' + df_results['reviewname']
-    else:
-        df_results['screening_review'] = df_results['screening_type']
-
-    # Define a custom palette for the combined screening-review categories.
-    custom_palette = {
-        'screening1_I': '#75BCFF',  # light blue for screening1, review I
-        'screening2_I': '#266aab',  # dark blue for screening2, review I
-        'screening1_II': '#a6ffa7',  # dark blue for screening1, review II
-        'screening2_II': '#5fb360',  # dark orange for screening2, review II
-        'screening1_III': '#ed9366',  # light green for screening2, review I
-        'screening2_III': '#E6550D'  # light green for screening2, review I
-
-    }
-
-    # Define descriptive names for the legend
-    legend_labels = {
-        'screening1_I': 'Review I (Physiotherapy): Screening 1',
-        'screening2_I': 'Review I (Physiotherapy): Screening 2',
-        'screening1_II': 'Review II (AI in Healthcare): Screening 1',
-        'screening2_II': 'Review II (AI in Healthcare): Screening 2',
-        'screening1_III': 'Review III (Neuropathies): Screening 1',
-        'screening2_III': 'Review III (Neuropathies): Screening 2'
-    }
-
-    # Hue order for consistent ordering if applicable
-    if len(df_results.reviewname.unique()) == 3:
-        hue_order = ['screening1_I','screening2_I', 'screening1_III', 'screening2_III', 'screening1_II', 'screening2_II']
-    else:
-        hue_order = ['screening1_I','screening2_I', 'screening1_II', 'screening2_II']
-
-
-    # Prepare data for plotting using 'screening_review' for the hue.
-    df_melted = df_results.melt(
-        id_vars=['model', 'screening_review'],
-        value_vars=metrics,
-        var_name='Metric',
-        value_name='Value'
+    
+    # Create figure with custom size
+    fig, axes = plt.subplots(
+        len(metrics), 1, 
+        figsize=(fig_width, fig_height), 
+        sharex=True,
+        constrained_layout=True,
     )
-
-    # Format metric names for display
-    metric_names = {
-        'accuracy': 'Accuracy',
-        'precision': 'Precision',
-        'recall': 'Recall',
-        'f1_score': 'F1 Score',
-        'mcc': 'MCC',
-        'pabak': 'PABAK',
-        'cohen_kappa': 'Cohen\'s κ',
-        'adjusted_accuracy': "Adj Accuracy",
-        'adjusted_precision': "Adj Precision",
-        'adjusted_recall': "Adj Recall",
-        'adjusted_f1_score': "Adj F1 Score",
-        'adjusted_mcc': "Adj MCC",
-        'adjusted_cohen_kappa': "Adj Cohen's κ",
-        'adjusted_pabak': "Adj PABAK"
+    
+    if len(metrics) == 1:
+        axes = [axes]  # Make axes iterable if there's only one subplot
+    
+    # Define color scheme to match the example image
+    default_colors = {
+        ('I', 'screening1'): '#B5C7E9',  # Light blue
+        ('I', 'screening2'): '#5B6A84',  # Dark blue
+        ('II', 'screening1'): '#FBD78B',  # Light orange/yellow
+        ('II', 'screening2'): '#E9A064',  # Darker orange
     }
-
-    df_melted['Metric'] = df_melted['Metric'].map(metric_names)
-    df_melted['model_cat'] = pd.Categorical(df_melted['model'], categories=model_order, ordered=True)
-    df_melted = df_melted.sort_values(['model_cat', 'screening_review'])
-
-    # Set up the plot grid: one column with each metric in its own row
-    num_metrics = len(metrics)
-    cols = 1
-    rows = num_metrics
-    fig, axes = plt.subplots(rows, cols, figsize=(1 *len(model_order), num_metrics * 4.5))
-
-    # Ensure axes is iterable
-    if num_metrics == 1:
-        axes = [axes]
-    else:
-        axes = axes.flatten()
-
-    # Define y-axis limits for different metrics
-    y_limits = {
-        'Accuracy': (0, 0.8),
-        'Precision': (0, 0.8),
-        'Recall': (0, 0.8),
-        'F1 Score': (0, 0.8),
-        'MCC': (-0.2, 0.8),
-        'PABAK': (-0.8, 0.8),
-        'Cohen\'s κ': (-0.2, 0.8),
-        "Adj Accuracy": (0, 0.8),
-        "Adj Precision": (0, 0.8),
-        "Adj Recall": (0, 0.8),
-        "Adj F1 Score": (0, 0.8),
-        "Adj MCC": (-0.2, 0.8),
-        "Adj Cohen's κ": (-0.2, 0.8),
-        "Adj PABAK": (0, 1)
-    }
-
-    for idx, metric in enumerate(metrics):
-        ax = axes[idx]
-        formatted_metric = metric_names[metric]
-
-        sns.barplot(
-            data=df_melted[df_melted['Metric'] == formatted_metric],
-            x='model_cat',
-            y='Value',
-            hue='screening_review',
-            palette=custom_palette,
-            ax=ax,
-            capsize=0.05,
-            err_kws={'linewidth': 1},
-            hue_order=hue_order
-        )
-
-        ax.set_title(formatted_metric, pad=10)
-        ax.set_xlabel('')
-        ax.set_ylabel(formatted_metric)
-        ax.set_ylim(y_limits.get(formatted_metric, (None, None)))
-        ax.grid(True, linestyle='--', alpha=0.3)
-
-        # Rotate and update x-axis labels using your model mapping
-        xticklabels = [model_name_corrections.get(label.get_text(), label.get_text())
-                       for label in ax.get_xticklabels()]
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", UserWarning)
-            ax.set_xticklabels(xticklabels)
-        plt.setp(ax.get_xticklabels(), rotation=90, ha='right', rotation_mode='anchor')
-        ax.get_legend().remove()
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        if formatted_metric in ['MCC', 'PABAK', "Cohen's κ", "Adj MCC", "Adj PABAK", "Adj Cohen's κ"]:
-            ax.axhline(y=0, color='black', linestyle='-', linewidth=0.5, alpha=0.5)
-
-    # Remove any unused axes
-    for i in range(idx + 1, len(axes)):
-        fig.delaxes(axes[i])
-
-    # Add a single unified legend with the updated descriptive labels
-    legend_handles, legend_labels_original = axes[0].get_legend_handles_labels()
-
-    # Replace the original labels with our descriptive ones
-    updated_legend_labels = [legend_labels[label] for label in legend_labels_original]
-
-    fig.legend(
-        legend_handles,
-        updated_legend_labels,
-        title='Screening & Review',
-        loc='center',
-        bbox_to_anchor=(0.5, -0.1),
-        ncol=2,  # Adjust based on number of items
-        frameon=True,
-        edgecolor='black'
+    
+    # Use custom colors if provided, otherwise use default palette
+    colors_to_use = custom_colors if custom_colors else default_colors
+    
+    # For each metric, create a subplot
+    for i, metric in enumerate(metrics):
+        ax = axes[i]
+        
+        # Group by model, reviewname, and screening_type to get the mean metric value
+        grouped = df_results.groupby(['model', 'reviewname', 'screening_type'])[metric].mean().reset_index()
+        
+        # Filter to only include models in the specified order
+        grouped = grouped[grouped['model'].isin(model_order)]
+        
+        # Sort by the model order
+        grouped['model_order'] = grouped['model'].map({m: i for i, m in enumerate(model_order)})
+        grouped = grouped.sort_values('model_order')
+        
+        # Set up the bar positions
+        bar_width = 0.18  # Match the example spacing
+        models = grouped['model'].unique()
+        n_models = len(models)
+        
+        # Get unique review/screening combinations
+        combinations = grouped[['reviewname', 'screening_type']].drop_duplicates()
+        combinations = combinations.sort_values(['reviewname', 'screening_type'])
+        n_combinations = len(combinations)
+        
+        # Calculate positions for each group of bars
+        positions = np.arange(n_models)
+        
+        # Plot each review/screening combination as a separate bar
+        for j, (_, row) in enumerate(combinations.iterrows()):
+            review = row['reviewname']
+            screening = row['screening_type']
+            
+            # Format label with "Review" prefix and capital S in "Screening"
+            label = f"Review {review} - Screening {screening[-1]}"
+            
+            # Filter data for this review/screening
+            subset = grouped[(grouped['reviewname'] == review) & 
+                             (grouped['screening_type'] == screening)]
+            
+            # Calculate bar position
+            offset = (j - n_combinations/2 + 0.5) * bar_width
+            bar_pos = positions + offset
+            
+            # Get color for this review/screening
+            color = colors_to_use.get((review, screening), '#CCCCCC')  # Default to gray if not found
+            
+            # Plot the bars with white borders and straight edges
+            bars = ax.bar(
+                bar_pos, 
+                subset[metric], 
+                width=bar_width,
+                label=label,
+                color=color,
+                edgecolor='white',  # White edge color
+                linewidth=3,        # Thicker border
+                alpha=1.0,          # Full opacity
+                zorder=3
+            )
+            
+            # Add value labels if requested
+            if add_value_labels:
+                for bar in bars:
+                    height = bar.get_height()
+                    value_text = f"{height:.2f}"
+                        
+                    ax.text(
+                        bar.get_x() + bar.get_width()/2.,
+                        height + 0.01,
+                        value_text,
+                        ha='center', 
+                        va='bottom',
+                        fontsize=9,
+                        fontweight='normal', 
+                        color='black',
+                        zorder=4
+                    )
+        
+        # Set the labels with improved styling
+        metric_name = metric.replace('_', ' ').title()
+        # Make MCC all caps
+        metric_name = metric_name.replace('Mcc', 'MCC')
+        ax.set_ylabel(metric_name, fontsize=12, fontweight='bold')
+        
+        # Set the x-tick positions and labels
+        ax.set_xticks(positions)
+        
+        try:
+            # Try to use model_name_corrections if it exists
+            ax.set_xticklabels([model_name_corrections.get(m, m) for m in models], 
+                       rotation=45, ha='right', fontsize=10, fontweight='bold')
+        except NameError:
+            # If model_name_corrections is not defined
+            ax.set_xticklabels(models, rotation=45, ha='right', fontsize=10, fontweight='bold')
+        
+        # Add horizontal grid lines only (to match example)
+        ax.grid(True, axis='y', linestyle='-', alpha=0.15, color='#999999', zorder=0)
+        ax.grid(False, axis='x')  # Remove vertical grid lines
+        
+        # Set y-axis limits with padding
+        ax.set_ylim(0, min(0.8, ax.get_ylim()[1] * 1.1))  # Cap at 0.8 to match example
+        
+        # Remove spines for a cleaner look
+        for spine in ['top', 'right']:
+            ax.spines[spine].set_visible(False)
+        
+        # Make remaining spines lighter
+        for spine in ['bottom', 'left']:
+            ax.spines[spine].set_color('#dddddd')
+    
+    # Add a single legend at the bottom of the figure (using handles from just one subplot to avoid duplication)
+    handles, labels = axes[0].get_legend_handles_labels()
+    by_label = dict(zip(labels, handles))  # Remove duplicates
+    legend = fig.legend(
+        by_label.values(), by_label.keys(),
+        loc='upper center', 
+        bbox_to_anchor=(0.5, -0.05),  # Position at bottom
+        ncol=4,                      # Four items per row
+        frameon=False,               # No frame
     )
-
-    plt.tight_layout()
-    plt.subplots_adjust(bottom=0.2)  # Increased bottom margin for legend
-
+    
+    # Add main title if provided
+    if plot_title:
+        plot_title = plot_title.replace('Mcc', 'MCC')
+        fig.suptitle(plot_title, fontsize=16, y=0.98, fontweight='bold')
+    
+    # Adjust layout for the legend and increase space between subplots
+    plt.subplots_adjust(bottom=0.15, hspace=0.4)
+    
+    # Save the figure if a path is provided
     if save_path:
-        file_extension = save_path.lower().split('.')[-1] if '.' in save_path else 'png'
-        if file_extension == 'pdf':
-            plt.savefig(save_path, format='pdf', bbox_inches='tight', pad_inches=0.4)
-        else:
-            plt.savefig(save_path, bbox_inches='tight', dpi=dpi, facecolor='white', edgecolor='none')
-        print(f"Plot saved to: {save_path}")
-        plt.show()
-        plt.close()
+        plt.savefig(save_path, dpi=dpi, bbox_inches='tight')
+        print(f"Plot saved to {save_path}")
+    
+    return fig, axes
+
+
+def plot_correlation_tiles(
+    df_corr, criteria_mapping, model_name_corrections, 
+    review_name=None, size_factor=3000, save_path=None,
+    custom_cmap=None, add_annotations=True,
+    fig_width=None, fig_height=None
+):
+    """
+    Plots a bubble-tile plot showing correlation values for each model and criterion.
+    """
+    # Set up enhanced plotting style
+    plt.rcParams.update({
+        'font.family': 'Arial',
+        'font.size': 12,
+        'axes.labelsize': 12,
+        'axes.titlesize': 12,
+        'xtick.labelsize': 9,
+        'ytick.labelsize': 9,
+        'legend.fontsize': 9,
+        'figure.titlesize': 12,
+        'axes.grid': False,
+        'axes.facecolor': '#ffffff',
+        'figure.facecolor': '#ffffff',
+    })
+    
+    # Create a custom colormap if specified
+    if isinstance(custom_cmap, str):
+        cmap = plt.get_cmap(custom_cmap)
+    elif custom_cmap is not None:
+        cmap = custom_cmap
     else:
-        plt.show()
-        plt.close()
-
-
-def plot_correlation_tiles(df_corr, criteria_mapping, model_name_corrections, review_name=None, size_factor=3000, save_path=None):
-    """
-    Plots a bubble-tile plot showing correlation values for each model (rows) and criterion (columns).
-    Each cell is drawn as a circle whose size is proportional to the absolute correlation value.
-    Two panels (facets) are created: one for each screening type, sharing the same y-axis.
-
-    Parameters:
-        df_corr (pd.DataFrame): Combined correlation results with columns:
-            'Criterion', 'Screening', 'Correlation', and 'model'.
-        criteria_mapping (dict): Mapping for criterion names.
-        model_name_corrections (dict): Mapping for model names.
-        review_name (str): Name of the review to display as the main title (e.g., "Review I: Physiotherapy").
-        size_factor (float): Factor to scale the marker sizes.
-        save_path (str, optional): File path to save the figure.
-    """
-
-    # Create a custom diverging colormap (Dark pink at -1, white at 0, green at +1).
-    custom_cmap = LinearSegmentedColormap.from_list("custom_diverging", ["#F0538C", "white", "#75BCFF"], N=256)
-
-    # Get sorted list of screening types (e.g. ['screening1', 'screening2'])
-    screenings = sorted(df_corr['Screening'].unique())
-
+        # Default pastel colormap using the specified colors
+        cmap = LinearSegmentedColormap.from_list(
+            "pastel_diverging", 
+            ["#E080A2", "#ffffff", "#6BAEE0"], 
+            N=256
+        )
+    
+    # Get unique screenings and models
+    screenings = df_corr['Screening'].unique()
+    
     # Compute overall model order (sorted by average correlation across screenings)
     model_order = (
         df_corr.groupby('model')['Correlation']
@@ -536,79 +547,143 @@ def plot_correlation_tiles(df_corr, criteria_mapping, model_name_corrections, re
         .index
         .tolist()
     )
-
-    # Create a subplot for each screening; share the y-axis so that model names appear only once.
-    fig, axes = plt.subplots(1, len(screenings), figsize=(6 * len(screenings), 0.5 * len(model_order) + 3), sharey=True)
+    
+    # Create figure with custom size if provided
+    if fig_width and fig_height:
+        fig_size = (fig_width, fig_height)
+    else:
+        fig_size = (6 * len(screenings), 0.5 * len(model_order) + 3)
+    
+    fig, axes = plt.subplots(
+        1, len(screenings), 
+        figsize=fig_size, 
+        sharey=True,
+        constrained_layout=True,
+        facecolor='#ffffff'
+    )
+    
     if len(screenings) == 1:
-        axes = [axes]
-
-    # Add a main title if provided
-    if review_name:
-        fig.suptitle(review_name, fontsize=16, fontweight='bold', y=0.98)
-        # Adjust the top margin to accommodate the title
-        plt.subplots_adjust(top=0.9)
-
-    # Helper to map raw criterion names (e.g., "population") to the pretty label from criteria_mapping.
-    def map_criterion(raw_crit, screening):
-        key = raw_crit + ('_scr1' if screening == 'screening1' else '_scr2')
-        return criteria_mapping.get(key, raw_crit.capitalize())
-
-    # Loop over each screening type (panel).
+        axes = [axes]  # Make axes iterable if there's only one subplot
+    
+    # Loop over each screening type
     for i, screening in enumerate(screenings):
         ax = axes[i]
-        # Subset and pivot the data: rows = models, columns = criteria.
+        ax.set_facecolor('#ffffff')  # Light background
+        
+        # Subset and pivot the data
         sub_df = df_corr[df_corr['Screening'] == screening]
         pivot_df = sub_df.pivot_table(index='model', columns='Criterion', values='Correlation', aggfunc='mean')
-        pivot_df = pivot_df.reindex(model_order)  # Reorder rows by model_order
-        pivot_df = pivot_df.reindex(sorted(pivot_df.columns), axis=1)  # Sort columns alphabetically
-
-        # Get raw labels from the pivot table.
-        x_labels_raw = pivot_df.columns.tolist()
-        y_labels_raw = pivot_df.index.tolist()
-
-        # Map x-axis labels using criteria_mapping and y-axis labels using model_name_corrections.
-        x_labels = [map_criterion(crit, screening) for crit in x_labels_raw]
-        y_labels = [model_name_corrections.get(m, m) for m in y_labels_raw]
-
+        
+        # Reorder rows by model_order and sort columns alphabetically
+        pivot_df = pivot_df.reindex(model_order)
+        pivot_df = pivot_df.reindex(sorted(pivot_df.columns), axis=1)
+        
+        # Get raw labels from the pivot table
+        x_labels = pivot_df.columns.tolist()
+        y_labels = pivot_df.index.tolist()
+        
+        # Set up the axes
         ax.set_xticks(np.arange(len(x_labels)))
-        ax.set_xticklabels(x_labels, rotation=90, ha='right')
+        ax.set_xticklabels(x_labels, rotation=45, ha='right', fontsize=9, fontweight='bold')
         ax.set_yticks(np.arange(len(y_labels)))
-        ax.set_yticklabels(y_labels)
-
-        # Remove the border around the plot
+        ax.set_yticklabels([model_name_corrections.get(m, m) for m in y_labels], fontsize=9)
+        
+        # Remove spines for a cleaner look
         for spine in ax.spines.values():
             spine.set_visible(False)
-
-        # Loop over each cell: plot a circle with size proportional to |correlation| and annotate it.
-        for yi, model in enumerate(y_labels_raw):
-            for xi, crit in enumerate(x_labels_raw):
-                corr = pivot_df.loc[model, crit]
-                if pd.isna(corr):
-                    continue
-                marker_size = abs(corr) * size_factor
-                color = custom_cmap((corr + 1) / 2)  # Map correlation from [-1,1] to [0,1] for colormap
-                ax.scatter(xi, yi, s=marker_size, color=color, edgecolors='white', linewidth=1, alpha=0.7, zorder=2)
-                ax.text(xi, yi, f"{corr:.2f}", ha='center', va='center', fontsize=8, zorder=3, color='black')
-
-        # Set title for each screening panel
-        screening_titles = {
-            'screening1': 'Screening 1',
-            'screening2': 'Screening 2'
-        }
-        ax.set_title(screening_titles.get(screening, screening))
-        ax.set_xlim(-0.5, len(x_labels) - 0.5)
-        ax.set_ylim(len(y_labels) - 0.5, -0.5)  # invert y-axis so the top row is highest ranked
-
-        # Draw white gridlines between cells.
+        
+        # Draw white gridlines between cells
         for x in np.arange(-0.5, len(x_labels), 1):
             ax.axvline(x, color='white', linewidth=1.5, zorder=1)
         for y in np.arange(-0.5, len(y_labels), 1):
             ax.axhline(y, color='white', linewidth=1.5, zorder=1)
+        
+        # Plot each cell as a bubble
+        for yi, model in enumerate(y_labels):
+            for xi, crit in enumerate(x_labels):
+                corr = pivot_df.loc[model, crit]
+                if pd.isna(corr):
+                    continue
+                
+                # Scale marker size by correlation strength
+                marker_size = abs(corr) * size_factor
+                
+                # Map correlation from [-1,1] to [0,1] for colormap
+                color_val = (corr + 1) / 2
+                color = cmap(color_val)
+                
+                # Plot the bubble with a subtle shadow effect
+                ax.scatter(
+                    xi, yi, 
+                    s=marker_size, 
+                    color=color, 
+                    edgecolors='#ffffff', 
+                    linewidth=0.5, 
+                    alpha=0.85, 
+                    zorder=2
+                )
+                
+                # Add text annotation if requested
+                if add_annotations:
+                    # Choose text color based on bubble color brightness
+                    text_color = 'black' if color_val > 0.4 else 'white'
+                    
+                    ax.text(
+                        xi, yi, 
+                        f"{corr:.2f}", 
+                        ha='center', 
+                        va='center', 
+                        fontsize=9,  # Minimum font size
+                        fontweight='normal',
+                        color=text_color, 
+                        zorder=3
+                    )
+        
+        # Set title for each screening panel with improved styling
+        screening_titles = {
+            'screening1': 'Title & Abstract Screening',
+            'screening2': 'Full-Text Screening'
+        }
+        ax.set_title(
+            screening_titles.get(screening, screening), 
+            fontsize=14, 
+            fontweight='bold', 
+            pad=15
+        )
+        
+        # Set axis limits
+        ax.set_xlim(-0.5, len(x_labels) - 0.5)
+        ax.set_ylim(len(y_labels) - 0.5, -0.5)  # Invert y-axis
+    
+    # Add a main title if provided
+    if review_name:
+        # Replace MCC with all caps if present
+        review_name = review_name.replace('Mcc', 'MCC')
+        fig.suptitle(
+            review_name, 
+            fontsize=16, 
+            fontweight='bold', 
+            y=1.05
+        )
+        
 
-    plt.tight_layout()
+    
+    # # Add a colorbar legend at the bottom
+    # cbar_ax = fig.add_axes([0.3, -0.05, 0.4, 0.02])  # [left, bottom, width, height]
+    # sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(-1, 1))
+    # sm.set_array([])
+    # cbar = fig.colorbar(sm, cax=cbar_ax, orientation='horizontal')
+    # cbar.set_label('Correlation Strength', fontsize=9, fontweight='bold')
+    
+    # Adjust layout to make room for the legend at the bottom
+    plt.subplots_adjust(bottom=0.15)
+    
+    # Save the figure if a path is provided
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
-    plt.show()
+        plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor())
+        print(f"Plot saved to {save_path}")
+    
+    return fig, axes
 
 
 def process_review_repredicting(review, screening_type, criteria_threshold=None):
@@ -782,8 +857,6 @@ def process_review_repredicting(review, screening_type, criteria_threshold=None)
     performance_results = pd.DataFrame.from_records(results_performance)
 
     return results_dfs, performance_results
-
-
 
 
 # First, find the intersection of models across all reviews
@@ -1056,6 +1129,7 @@ def analyze_teams(boolean_matrix, team_labels, feature_names=None):
 
 
 def performance_by_screening(output_df, screening_type, infodict):
+
     y_true = output_df[screening_type].astype(int)
     y_pred = output_df[f'predicted_{screening_type}'].astype(int)
     total_records = infodict['total_records']

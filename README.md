@@ -1,33 +1,58 @@
+# Academate: AI-Powered Systematic Literature Review Framework
 
-# Academate: Academic Literature Screening Tool
-
-
-<p align="center">
+<div align="center">
   <img src="img/academate_logo.png" width="200"/>
-</p>
-
-
+  
+  [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+  [![Python](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/)
+  [![Web App](https://img.shields.io/badge/Web%20App-Available-green)](https://apps.cosy.bio/academate)
+</div>
 
 ## Overview
-Academate is a Python-based tool for automating the screening and analysis of academic literature using Large Language Models (LLMs) and embeddings. It supports a two-stage screening process with PDF document processing capabilities, designed to streamline systematic reviews in academic research.
 
-<p align="center">
+Academate is a comprehensive AI-powered framework designed to streamline the systematic literature review process. It addresses the challenges of information overload in scientific research by leveraging state-of-the-art large language models (LLMs) and embeddings to automate the labor-intensive steps of systematic reviews while keeping the human in the loop.
+
+<div align="center">
   <img src="img/graphical_abstract.drawio.png" width="600"/>
-</p>
+</div>
+
+## Key Features
+
+- **End-to-End Review Support**: Automates all phases of a PRISMA-compliant systematic review
+- **LLM-Powered Screening**: Two-stage literature screening (title/abstract and full-text)
+- **Automated PDF Handling**: Downloads, processes, and analyzes PDF documents
+- **Interactive Q&A Chatbot**: Extract insights from the final set of included articles
+- **Visualizations**: PRISMA flow diagrams and topic visualizations
+- **Flexible Architecture**: Modular design with support for multiple LLM providers
+- **Human-in-the-Loop**: Maintain researcher oversight at all stages
+- **Vector Database Integration**: Leverages Chroma for efficient text processing
+- **Concurrent Processing**: Optimized for performance with large document sets
+
+## System Architecture
+
+Academate consists of four main modules that align with the systematic review workflow:
+
+1. **Literature Identification**: Automated generation of database-specific search queries for PubMed, Semantic Scholar, and Scopus
+2. **Screening 1 (Title & Abstract)**: LLM-driven evaluation of titles and abstracts against inclusion/exclusion criteria
+3. **Screening 2 (Full Text)**: Automated PDF retrieval, text extraction, and semantic search for in-depth evaluation
+4. **Data Extraction**: Interactive chatbot interface for querying the final selected articles
 
 
-## Features
-- Two-stage literature screening
-- Automated PDF downloading from various sources
-- PDF text extraction and embedding
-- Vector database integration using Chroma
-- Concurrent processing for improved performance
-- Progress tracking and error handling
-- Excel report generation
-- PRISMA flow diagram visualization
+## Installation
 
-## Requirements
+### Python Package
+
+```bash
+# Clone the repository
+git clone https://github.com/fmdelgado/academatepy
+cd academate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
 ### Main Dependencies
+
 ```
 langchain-community
 langchain
@@ -42,21 +67,10 @@ xlsxwriter
 plotly (for visualizations)
 ```
 
-## Installation
-1. Clone the repository:
-```bash
-git clone https://github.com/fmdelgado/academatepy
-cd academate
-```
-
-2. Install required packages:
-```bash
-pip install -r requirements.txt
-```
-
 ## Usage
 
 ### Basic Setup
+
 ```python
 from academate import academate
 import nest_asyncio  # If using Jupyter notebook
@@ -66,9 +80,9 @@ nest_asyncio.apply()
 
 # Initialize the academate instance
 screening = academate(
-    topic=None,
-    llm=your_llm_model,
-    embeddings=your_embeddings_model,
+    topic="Your research topic",
+    llm=your_llm_model,  # e.g., ChatOpenAI(model="gpt-4o")
+    embeddings=your_embeddings_model,  # e.g., OpenAIEmbeddings()
     criteria_dict=your_criteria,
     vector_store_path="path/to/store",
     literature_df=your_dataframe,
@@ -78,32 +92,78 @@ screening = academate(
 )
 ```
 
-### Criteria Dictionary Format
-```python
-criteria_dict = {
-    "criterion_1": "Description of criterion 1",
-    "criterion_2": "Description of criterion 2",
-    # ...additional criteria
+### Define Inclusion/Exclusion Criteria
+In Academate, criteria must be structured to instruct the LLM to evaluate whether the criterion is met and return a boolean value. This approach ensures systematic assessment and reproducibility.
+Best Practices:
+
+Structure each criterion with a clear, detailed description
+Always format as conditional statements that return true/false
+Be explicit about both inclusion (return true) and exclusion (return false) conditions
+Use precise language to avoid ambiguity
+Consider what information will be available at each screening stage
+
+```
+python
+Copiarcriteria_dict = {
+    "population": "If the study population includes humans with endometrial disorders (such as Asherman's syndrome, intrauterine adhesions, endometrial atrophy), then return true. Otherwise, return false.",
+    
+    "intervention": "If the study evaluates a regenerative therapy including cellular therapies (stem cells, MSCs) or acellular therapies (PRP, EVs), then return true. If the study exclusively evaluates pharmacological treatments without a regenerative component, then return false.",
+    
+    "outcome": "If the study reports outcomes related to endometrial regeneration, repair, or function (including endometrial thickness, menstrual changes, fertility outcomes), then return true. If the study only reports outcomes unrelated to endometrial regeneration, then return false.",
+    
+    "study_type": "If the article is an original peer-reviewed full-text article, then return true. If the article is a review, opinion piece, editorial, letter, or untranslated document, then return false."
 }
 ```
 
-### Running Screenings
+This structured approach encourages researchers to think critically about the precise meaning and operationalization of each criterion, leading to more consistent and reproducible reviews.
+
+### Run Screening Process
+
 ```python
-# Run first screening
+# Run first screening (title/abstract)
 results_screening1 = screening.run_screening1()
 
-# Run second screening (PDF-based)
+# Run second screening (full-text)
 results_screening2 = screening.run_screening2()
+
+# Generate PRISMA flow diagram
+screening.create_prisma_flow_diagram()
+
+# Create topic visualization
+screening.create_topic_visualization()
 ```
 
-### Required DataFrame Format
-The input DataFrame should contain:
-- A unique identifier column (will be created if not present)
-- Content column (specified in content_column parameter)
-- Optional: 'doi' column for PDF retrieval
-- Optional: 'pdf_path' column for existing PDFs
+### Interactive Chatbot for Data Extraction
+
+```python
+# Create and use the chatbot to query included articles
+response = screening.chat("What are the main outcomes reported in studies using stem cells?")
+```
+
+## Performance Benchmarks
+
+Academate has been evaluated on multiple systematic reviews across different domains, showing substantial agreement with human reviewers. Key findings from our evaluation:
+
+- **LLM Performance**: Gemini models consistently demonstrated the highest performance, with gemini-1.5-pro achieving the highest mean adjusted Matthews Correlation Coefficient (0.453) and Cohen's Kappa (0.452)
+- **Screening Stages**: Performance was generally higher in title/abstract screening compared to full-text screening
+- **Domain Variation**: Performance varied across research domains, suggesting that certain fields may present unique challenges
+
+<div align="center">
+  <img src="validation/results/results/plots/performance_plots_3metrics.png" width="600"/>
+</div>
+
+## Web Application
+
+Academate is also available as a web application at [https://apps.cosy.bio/academate](https://apps.cosy.bio/academate).
+
+The web interface provides:
+- Intuitive setup of search terms and inclusion/exclusion criteria
+- Real-time visualization of the screening process
+- Interactive chatbot for querying included studies
+- Export options for results and PRISMA diagrams
 
 ## Directory Structure
+
 ```
 vector_store_path/
 ├── embeddings/
@@ -119,75 +179,54 @@ vector_store_path/
     └── downloaded_pdfs/
 ```
 
-## Core Components
-
-### Screening Process
-1. **First Screening (`run_screening1`):**
-   - Analyzes abstracts/titles
-   - Creates initial embeddings
-   - Generates preliminary results
-
-2. **Second Screening (`run_screening2`):**
-   - Downloads and processes PDFs
-   - Creates PDF embeddings
-   - Performs detailed analysis
-
-### PDF Processing
-- Automatic DOI detection
-- Multi-source PDF downloading
-- Text extraction and chunking
-- Vector embeddings creation
-
-### Output Generation
-- Excel reports with color coding
-- PRISMA flow diagrams
-- Detailed logging
-- Progress tracking
-
-## Error Handling
-- Automatic retries for failed operations
-- Comprehensive error logging
-- Progress persistence
-- Recovery from interruptions
-
-## Using in Jupyter Notebooks
-When using in Jupyter notebooks, always include:
-```python
-import nest_asyncio
-nest_asyncio.apply()
-```
-
 ## Tips for Optimal Use
-1. Ensure proper file permissions for storage directories
-2. Monitor memory usage with large PDF collections
-3. Use checkpointing for long-running processes
-4. Review logs for error diagnosis
-5. Validate PDF paths before running `screening2`
 
-## Common Issues and Solutions
-1. **Event Loop Errors in Jupyter:**
-   - Solution: Use nest_asyncio
+1. **Define Clear Criteria**: Formulate precise inclusion/exclusion criteria
+2. **API Keys**: Use valid API keys for optimal performance with external services
+3. **PDF Management**: Ensure proper file permissions for PDF storage
+4. **Memory Usage**: Monitor memory consumption when processing large collections
+5. **Checkpointing**: Enable checkpointing for long-running processes
 
-2. **PDF Download Failures:**
+## Troubleshooting
+
+1. **Event Loop Errors in Jupyter**:
+   - Solution: Use `nest_asyncio.apply()`
+
+2. **PDF Download Failures**:
    - Check DOI validity
    - Verify access permissions
    - Review error logs
 
-3. **Memory Issues:**
-   - Adjust batch sizes
+3. **Memory Issues**:
+   - Adjust batch sizes via the `batch_size` parameter
    - Monitor PDF chunk sizes
    - Use proper garbage collection
 
 ## Contributing
+
 Contributions are welcome! Please follow these steps:
 1. Fork the repository
 2. Create a feature branch
 3. Submit a pull request
 
 ## License
-This project is licensed under the MIT License.
+
+This project is licensed under the BSD 3-Clause License.
+
+**License Terms:**
+- Free for academic and non-profit use under the BSD 3-Clause License (https://opensource.org/license/BSD-3-Clause)
+- Commercial users must contact the Cosy.Bio laboratory at University of Hamburg (https://cosy.bio) to obtain a commercial license
+
+## Code Availability
+
+- Python package: [https://github.com/fmdelgado/academatepy](https://github.com/fmdelgado/academatepy)
+- Java version: [https://github.com/SimonSuewerUHH/academate4j](https://github.com/SimonSuewerUHH/academate4j)
+- UI: [https://github.com/SimonSuewerUHH/academateUi](https://github.com/SimonSuewerUHH/academateUi)
+- Web tool: [https://apps.cosy.bio/academate](https://apps.cosy.bio/academate)
+
 
 ## Contact
+
 For inquiries or support, please contact:  
 Fernando Miguel Delgado Chaves  
 [fernando.miguel.delgado-chaves@uni-hamburg.de](mailto:fernando.miguel.delgado-chaves@uni-hamburg.de)

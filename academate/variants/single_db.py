@@ -179,7 +179,7 @@ class AcademateSingleDB(AcademateBase):
         # Check if screening1 has been run
         if self.results_screening1 is None:
             # Check if PDF paths are provided
-            if self.results_screening1 is not None and 'pdf_path' in self.results_screening1.columns:
+            if 'pdf_path' in self.results_screening1.columns:
                 self.logger.info("Using provided PDF paths for screening2.")
                 self.results_screening2 = self.results_screening1.copy()
             else:

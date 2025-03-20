@@ -86,6 +86,7 @@ class academate:
         self.results_screening1 = None
         self.screening1_record2answer = dict()
         self.screening1_missing_records = set()
+        self.uniqueids_withoutPDFtext = set()
         self.chunksize = chunksize
         self.vectorDB_screening1 = None
 
@@ -178,7 +179,7 @@ class academate:
     # EMBEDDINGS
     def embed_literature_df(self, path_name=None):
         if path_name is None:
-            path_name = self.embeddings_path12
+            path_name = self.embeddings_path1
         else:
             os.makedirs(path_name, exist_ok=True)
         if self.verbose:
@@ -274,6 +275,7 @@ class academate:
         return json_string
 
     def prepare_screening_prompt(self):
+        # Build the formatted criteria and JSON structure from the criteria_dict
         formatted_criteria = "\n".join(f"- {key}: {value}" for key, value in self.criteria_dict.items())
         json_structure = json.dumps(
             {key: {"label": "boolean", "reason": "string"} for key in self.criteria_dict.keys()},
@@ -358,13 +360,40 @@ class academate:
     @staticmethod
     def atomic_save(file_path, data):
         """
-        Saves data to a file atomically.xq`
+        Saves data to a file atomically.
         """
         dir_name = os.path.dirname(file_path)
         with tempfile.NamedTemporaryFile('wb', delete=False, dir=dir_name) as tmp_file:
             pickle.dump(data, tmp_file)
             temp_name = tmp_file.name
         shutil.move(temp_name, file_path)
+
+    @staticmethod
+    def has_repeated_content(documents):
+        """
+        Check if there's repeated content across multiple documents.
+        Args:
+            documents: A list of document objects with a 'page_content' attribute or a list of strings
+        Returns:
+            bool: True if any identical content appears more than once, False otherwise
+        """
+        content_set = set()
+        for doc in documents:
+            # Extract content (handle both document objects with page_content attribute and direct strings)
+            if hasattr(doc, 'page_content'):
+                content = doc.page_content
+            else:
+                content = str(doc)
+
+            # If we've seen this content before, we found a duplicate
+            if content in content_set:
+                return True
+
+            # Add the content to our set of seen content
+            content_set.add(content)
+
+        # No duplicates found
+        return False
 
     def save_screening_results(self, screening_type):
         with threading.Lock():
@@ -443,6 +472,7 @@ class academate:
                         self.logger.error(f"No document found for record {recnumber}")
                         return recnumber, None
                     context = document_row[self.content_column].iloc[0]
+
                 elif screening_type == 'screening2':
                     # screening2
                     # Load the Chroma index for this PDF
@@ -506,14 +536,19 @@ class academate:
                     self.logger.warning(f"Unexpected response format for record {recnumber}. Retrying...")
 
             except Exception as e:
+                if "Event loop is closed" in str(e):
+                    # If the event loop is closed, no point in retrying with the same loop
+                    self.logger.error(f"Event loop closed for record {recnumber}. Cannot continue.")
+                    return recnumber, None
                 self.logger.error(f"Error processing record {recnumber}: {str(e)}")
 
-            if attempt < max_retries - 1:
-                self.logger.info(f"Retrying record {recnumber}... (Attempt {attempt + 2}/{max_retries})")
-                await asyncio.sleep(2)  # Wait before retrying
-            else:
-                self.logger.error(f"Failed to process record {recnumber} after {max_retries} attempts.")
-                break
+                if attempt < max_retries - 1:
+                    self.logger.info(f"Retrying record {recnumber}... (Attempt {attempt + 2}/{max_retries})")
+                    await asyncio.sleep(2)
+
+                else:
+                    self.logger.error(f"Failed to process record {recnumber} after {max_retries} attempts.")
+                    break
 
         return recnumber, None
 
@@ -910,6 +945,7 @@ class academate:
     async def embed_article_PDF(self, pdf_record: pd.Series = None):
         """
         Embeds a single PDF article with improved error handling and database management.
+        pdf_record = record
         """
         uniqueid = str(pdf_record['uniqueid'])
         try:
@@ -1445,3 +1481,5 @@ class academate:
         }
 
         final_state = chat_app.invoke(inputs)
+        return final_state
+

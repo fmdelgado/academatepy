@@ -208,7 +208,7 @@ class AbstractScreener(ABC):
     # In academate/base/screener.py
     async def process_records_concurrently(self, records_to_process, max_concurrency=5):
         """
-        Process records concurrently with improved error handling for event loop issues.
+        Process records concurrently with batch-level progress tracking.
 
         Args:
             records_to_process (list): Records to process
@@ -220,6 +220,7 @@ class AbstractScreener(ABC):
         # Initialize counters
         success_count = 0
         failure_count = 0
+        all_results = []
 
         # Create semaphore for concurrency control
         sem = asyncio.Semaphore(max_concurrency)
@@ -241,54 +242,63 @@ class AbstractScreener(ABC):
                 self.logger.error(f"Critical error with semaphore: {str(e)}")
                 return record.get('uniqueid', 'unknown'), None
 
-        # Create tasks one by one to avoid overloading
-        all_results = []
-
         # Process in small batches to avoid overwhelming the event loop
         batch_size = 10
-        for i in range(0, len(records_to_process), batch_size):
-            batch = records_to_process[i:i + batch_size]
-            self.logger.info(
-                f"Processing batch {i // batch_size + 1}/{(len(records_to_process) + batch_size - 1) // batch_size}")
+        num_batches = (len(records_to_process) + batch_size - 1) // batch_size
 
-            # Create tasks for this batch
-            tasks = [asyncio.create_task(process_with_semaphore(record)) for record in batch]
+        # Create a progress bar for batches
+        with tqdm(total=num_batches, desc=f"Processing Batches ({self.screening_type})") as batch_progress:
+            for i in range(0, len(records_to_process), batch_size):
+                batch = records_to_process[i:i + batch_size]
+                self.logger.debug(
+                    f"Processing batch {i // batch_size + 1}/{num_batches}")
 
-            # Use tqdm if available, otherwise just process
-            try:
-                from tqdm.asyncio import tqdm_asyncio
-                results = await tqdm_asyncio.gather(*tasks, desc=f"Processing Records ({self.screening_type})")
-            except ImportError:
+                # Create tasks for this batch
+                tasks = [asyncio.create_task(process_with_semaphore(record)) for record in batch]
+
+                # Process batch without individual progress bars
                 results = await asyncio.gather(*tasks)
 
-            # Process results from this batch
-            for uniqueid, result in results:
-                all_results.append((uniqueid, result))
+                # Process results from this batch
+                for uniqueid, result in results:
+                    all_results.append((uniqueid, result))
 
-                if result:
-                    self.record2answer[uniqueid] = result
-                    self.missing_records.discard(uniqueid)
-                    success_count += 1
-                else:
-                    self.missing_records.add(uniqueid)
-                    failure_count += 1
+                    if result:
+                        self.record2answer[uniqueid] = result
+                        self.missing_records.discard(uniqueid)
+                        success_count += 1
+                    else:
+                        self.missing_records.add(uniqueid)
+                        failure_count += 1
 
-            # Explicitly clean up tasks
-            for task in tasks:
-                task.cancel()
+                # Explicitly clean up tasks
+                for task in tasks:
+                    task.cancel()
 
-            # Save results after each batch
-            self.save_screening_results()
+                # Save results after each batch
+                self.save_screening_results()
 
-            # Force garbage collection to clean up resources
-            import gc
-            gc.collect()
+                # Update batch progress with count stats
+                batch_progress.set_postfix({
+                    'Success': success_count,
+                    'Failed': failure_count
+                })
 
-            # Small delay between batches to allow event loop to process other tasks
-            await asyncio.sleep(1)
+                # Update batch progress bar
+                batch_progress.update(1)
+
+                # Force garbage collection to clean up resources
+                import gc
+                gc.collect()
+
+                # Small delay between batches to allow event loop to process other tasks
+                await asyncio.sleep(1)
 
         # Clean up GRPC resources that might be causing the errors
         self._cleanup_grpc_resources()
+
+        # Log final results
+        self.logger.info(f"Processing complete. Success: {success_count}, Failed: {failure_count}")
 
         return all_results
 

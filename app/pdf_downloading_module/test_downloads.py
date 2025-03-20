@@ -36,7 +36,10 @@ print(df)
 df['pdf_path'] = pdf_location + '/' + df['filename']
 
 # Process the DataFrame
-downloaded_articles_df = article_downloader.process_dataframe(df, checkpoint_file=checkpoint_file)
+downloadpdfs= ArticleDownloader(output_directory=pdf_location, email=email, logger=logger, verbose=True)
+self = downloadpdfs
+
+downloaded_articles_df = downloadpdfs.process_dataframe(df, checkpoint_file=checkpoint_file)
 
 # Save the updated DataFrame
 downloaded_articles_df.to_pickle(f"{workdir}/final_dataframe_with_pdfs.pkl")
