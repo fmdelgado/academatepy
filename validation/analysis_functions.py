@@ -13,6 +13,269 @@ import warnings
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.gridspec as gridspec
 from sklearn.cluster import KMeans
+from PIL import Image
+import io
+
+
+def save_figure_plos(fig, save_path, dpi=300, format='tiff'):
+    """
+    Save a matplotlib figure in PLOS-compliant format (TIFF with LZW compression).
+
+    PLOS Requirements:
+    - Format: TIFF or EPS (TIFF preferred)
+    - Resolution: 300-600 DPI
+    - Max dimensions: 2250x2625 pixels (7.5" x 8.75" at 300 DPI)
+    - Color: RGB 8-bit
+    - TIFF: Flattened, no alpha, LZW compression
+    - Fonts: Arial, Times, Symbol (8-12pt)
+
+    Parameters:
+    -----------
+    fig : matplotlib.figure.Figure
+        The figure to save
+    save_path : str
+        Output path (extension will be replaced with .tif or .eps)
+    dpi : int
+        Resolution in DPI (default 300, max 600)
+    format : str
+        'tiff' or 'eps' (default 'tiff')
+
+    Returns:
+    --------
+    str : Path to saved file
+    """
+    # Ensure DPI is within PLOS acceptable range
+    dpi = max(300, min(600, dpi))
+
+    # Get figure size in inches and check dimensions
+    fig_width_in, fig_height_in = fig.get_size_inches()
+    width_px = fig_width_in * dpi
+    height_px = fig_height_in * dpi
+
+    # PLOS max dimensions
+    max_width_px = 2250
+    max_height_px = 2625
+
+    # Scale down if necessary while maintaining aspect ratio
+    if width_px > max_width_px or height_px > max_height_px:
+        scale_w = max_width_px / width_px
+        scale_h = max_height_px / height_px
+        scale = min(scale_w, scale_h)
+        fig.set_size_inches(fig_width_in * scale, fig_height_in * scale)
+        print(f"Figure scaled to fit PLOS dimensions: {fig_width_in * scale:.2f}\" x {fig_height_in * scale:.2f}\"")
+
+    # Determine output path and format
+    base_path = os.path.splitext(save_path)[0]
+
+    if format.lower() == 'eps':
+        output_path = base_path + '.eps'
+        # Save as EPS with embedded fonts
+        fig.savefig(
+            output_path,
+            format='eps',
+            dpi=dpi,
+            bbox_inches='tight',
+            pad_inches=0.1,
+            facecolor='white',
+            edgecolor='none'
+        )
+        print(f"Figure saved as EPS: {output_path}")
+
+    else:  # TIFF format (default)
+        output_path = base_path + '.tif'
+
+        # First save to PNG buffer (high quality)
+        png_buffer = io.BytesIO()
+        fig.savefig(
+            png_buffer,
+            format='png',
+            dpi=dpi,
+            bbox_inches='tight',
+            pad_inches=0.1,
+            facecolor='white',
+            edgecolor='none'
+        )
+        png_buffer.seek(0)
+
+        # Open with PIL and convert to RGB (removes alpha channel)
+        img = Image.open(png_buffer)
+
+        # Convert to RGB if necessary (removes alpha channel)
+        if img.mode in ('RGBA', 'LA', 'P'):
+            # Create white background
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            if img.mode in ('RGBA', 'LA'):
+                background.paste(img, mask=img.split()[-1])  # Use alpha as mask
+                img = background
+            else:
+                img = img.convert('RGB')
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
+
+        # Save as TIFF with LZW compression
+        img.save(
+            output_path,
+            format='TIFF',
+            compression='tiff_lzw',
+            dpi=(dpi, dpi)
+        )
+
+        png_buffer.close()
+        print(f"Figure saved as TIFF (LZW): {output_path}")
+
+    # Also save PNG version for reference
+    png_path = base_path + '.png'
+    fig.savefig(
+        png_path,
+        format='png',
+        dpi=dpi,
+        bbox_inches='tight',
+        pad_inches=0.1,
+        facecolor='white'
+    )
+
+    return output_path
+
+
+def convert_png_to_plos_tiff(png_path, output_path=None, dpi=300):
+    """
+    Convert an existing PNG image to PLOS-compliant TIFF format.
+
+    Parameters:
+    -----------
+    png_path : str
+        Path to existing PNG file
+    output_path : str, optional
+        Output path for TIFF (default: same as input with .tif extension)
+    dpi : int
+        Resolution for output TIFF
+
+    Returns:
+    --------
+    str : Path to saved TIFF file
+    """
+    if output_path is None:
+        output_path = os.path.splitext(png_path)[0] + '.tif'
+
+    # Open PNG
+    img = Image.open(png_path)
+
+    # Convert to RGB (removes alpha channel)
+    if img.mode in ('RGBA', 'LA', 'P'):
+        background = Image.new('RGB', img.size, (255, 255, 255))
+        if img.mode == 'P':
+            img = img.convert('RGBA')
+        if img.mode in ('RGBA', 'LA'):
+            background.paste(img, mask=img.split()[-1])
+            img = background
+        else:
+            img = img.convert('RGB')
+    elif img.mode != 'RGB':
+        img = img.convert('RGB')
+
+    # Check dimensions
+    width, height = img.size
+    max_width = 2250
+    max_height = 2625
+
+    if width > max_width or height > max_height:
+        # Scale down while maintaining aspect ratio
+        ratio = min(max_width / width, max_height / height)
+        new_size = (int(width * ratio), int(height * ratio))
+        img = img.resize(new_size, Image.LANCZOS)
+        print(f"Image resized from {width}x{height} to {new_size[0]}x{new_size[1]}")
+
+    # Save as TIFF with LZW compression
+    img.save(
+        output_path,
+        format='TIFF',
+        compression='tiff_lzw',
+        dpi=(dpi, dpi)
+    )
+
+    print(f"Converted {png_path} to {output_path}")
+    return output_path
+
+
+def batch_convert_to_plos(input_dir, output_dir=None, dpi=300):
+    """
+    Batch convert all PNG files in a directory to PLOS-compliant TIFF.
+
+    Parameters:
+    -----------
+    input_dir : str
+        Directory containing PNG files
+    output_dir : str, optional
+        Output directory (default: same as input)
+    dpi : int
+        Resolution for output TIFFs
+
+    Returns:
+    --------
+    list : Paths to converted files
+    """
+    if output_dir is None:
+        output_dir = input_dir
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    converted_files = []
+    for filename in os.listdir(input_dir):
+        if filename.lower().endswith('.png'):
+            input_path = os.path.join(input_dir, filename)
+            output_filename = os.path.splitext(filename)[0] + '.tif'
+            output_path = os.path.join(output_dir, output_filename)
+
+            try:
+                convert_png_to_plos_tiff(input_path, output_path, dpi)
+                converted_files.append(output_path)
+            except Exception as e:
+                print(f"Error converting {filename}: {e}")
+
+    print(f"\nConverted {len(converted_files)} files to PLOS-compliant TIFF")
+    return converted_files
+
+
+def setup_plos_plotting_style():
+    """
+    Set up matplotlib rcParams for PLOS-compliant figures.
+
+    PLOS Requirements:
+    - Fonts: Arial, Times, or Symbol (8-12pt)
+    - RGB color mode
+    - High resolution (300-600 DPI)
+    """
+    plt.rcParams.update({
+        # Font settings - PLOS requires Arial, Times, or Symbol
+        'font.family': 'Arial',
+        'font.size': 10,
+        'axes.labelsize': 11,
+        'axes.titlesize': 12,
+        'xtick.labelsize': 9,
+        'ytick.labelsize': 9,
+        'legend.fontsize': 9,
+        'figure.titlesize': 12,
+
+        # Figure settings
+        'figure.dpi': 300,
+        'savefig.dpi': 300,
+        'savefig.bbox': 'tight',
+        'savefig.pad_inches': 0.1,
+        'savefig.facecolor': 'white',
+        'savefig.edgecolor': 'none',
+
+        # Ensure proper color handling
+        'image.cmap': 'viridis',
+
+        # Grid and axes
+        'axes.grid': True,
+        'grid.alpha': 0.3,
+        'axes.facecolor': 'white',
+        'figure.facecolor': 'white',
+    })
+    print("PLOS plotting style configured")
 
 
 model_name_corrections = {
@@ -316,7 +579,7 @@ def compute_criteria_pearson_correlation(predcrit_dict, screening_type, config):
 def plot_performance_metrics_grouped(
     df_results, metrics, model_order, save_path=None, dpi=300,
     custom_colors=None, plot_title=None, add_value_labels=True,
-    fig_width=12, fig_height=8
+    fig_width=12, fig_height=8, plos_format=True
 ):
     """
     Creates performance metric plots for comparing model performance
@@ -493,17 +756,20 @@ def plot_performance_metrics_grouped(
     
     # Save the figure if a path is provided
     if save_path:
-        plt.savefig(save_path, dpi=dpi, bbox_inches='tight')
-        print(f"Plot saved to {save_path}")
-    
+        if plos_format:
+            save_figure_plos(fig, save_path, dpi=dpi, format='tiff')
+        else:
+            plt.savefig(save_path, dpi=dpi, bbox_inches='tight')
+            print(f"Plot saved to {save_path}")
+
     return fig, axes
 
 
 def plot_correlation_tiles(
-    df_corr, criteria_mapping, model_name_corrections, 
+    df_corr, criteria_mapping, model_name_corrections,
     review_name=None, size_factor=3000, save_path=None,
     custom_cmap=None, add_annotations=True,
-    fig_width=None, fig_height=None
+    fig_width=None, fig_height=None, plos_format=True
 ):
     """
     Plots a bubble-tile plot showing correlation values for each model and criterion.
@@ -677,12 +943,15 @@ def plot_correlation_tiles(
     
     # Adjust layout to make room for the legend at the bottom
     plt.subplots_adjust(bottom=0.15)
-    
+
     # Save the figure if a path is provided
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor())
-        print(f"Plot saved to {save_path}")
-    
+        if plos_format:
+            save_figure_plos(fig, save_path, dpi=300, format='tiff')
+        else:
+            plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor=fig.get_facecolor())
+            print(f"Plot saved to {save_path}")
+
     return fig, axes
 
 
