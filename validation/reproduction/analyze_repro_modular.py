@@ -322,3 +322,6 @@ for ollama_model in ollama_models:
     results_df2.to_pickle(f'{outdir}/results_screening2.pkl')
     screening_ollama.create_PRISMA_visualization()
 
+# read a pickle
+with open("/Users/fernando/Documents/Research/academatepy/validation/reproduction/results/results_llama3.3_70b/screening1/screening1_predicted_criteria.pkl", 'rb') as f:
+    test = pickle.load(f)

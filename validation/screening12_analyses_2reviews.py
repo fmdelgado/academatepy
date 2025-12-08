@@ -8,22 +8,25 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.colors import LinearSegmentedColormap
 
-# Set up enhanced plotting style
-plt.style.use('seaborn-v0_8-whitegrid')
+# Set up PLOS-compliant plotting style
+# PLOS Requirements: Arial font, 8-12pt, 300-600 DPI
+setup_plos_plotting_style()
+
 plt.rcParams.update({
     'font.family': 'Arial',
-    'font.size': 12,
-    'axes.labelsize': 14,
-    'axes.titlesize': 16,
-    'xtick.labelsize': 11,
-    'ytick.labelsize': 11,
-    'legend.fontsize': 11,
-    'figure.titlesize': 18,
-    'figure.figsize': (12, 8),
+    'font.size': 10,
+    'axes.labelsize': 11,
+    'axes.titlesize': 12,
+    'xtick.labelsize': 9,
+    'ytick.labelsize': 9,
+    'legend.fontsize': 9,
+    'figure.titlesize': 12,
+    'figure.figsize': (7.5, 8),  # PLOS max: 7.5" x 8.75"
     'figure.dpi': 300,
     'savefig.dpi': 300,
     'savefig.bbox': 'tight',
-    'savefig.pad_inches': 0.2,
+    'savefig.pad_inches': 0.1,
+    'savefig.facecolor': 'white',
     'axes.grid': True,
     'grid.alpha': 0.3
 })
@@ -282,17 +285,19 @@ results_df_all.groupby(['screening_type', 'model_name'])['adjusted_mcc'].mean().
 results_df_all.groupby(['screening_type', 'model_name'])['cohen_kappa'].mean().reset_index(
     name='mean_cohen_kappa').sort_values(by='mean_cohen_kappa', ascending=False)
 
-# Update the plot calls with additional styling parameters
+# Update the plot calls with PLOS-compliant settings
+# plos_format=True generates TIFF files with LZW compression
 plot_performance_metrics_grouped(
     df_results=results_df_all,
     metrics=metrics_to_plot,
     model_order=top_k,
-    save_path=f"{result_type_dir}/plots/performance_plots_kappa.png",
+    save_path=f"{result_type_dir}/plots/performance_plots_kappa",  # Extension added by save function
     custom_colors=color_palette,
     plot_title="Model Performance: Kappa Metrics",
     add_value_labels=True,
-    fig_width=14,
-    fig_height=10
+    fig_width=7.5,  # PLOS max width
+    fig_height=8,
+    plos_format=True
 )
 
 metrics_to_plot = [
@@ -303,18 +308,18 @@ plot_performance_metrics_grouped(
     df_results=results_df_all,
     metrics=metrics_to_plot,
     model_order=top_k,
-    save_path=f"{result_type_dir}/plots/performance_plots_mcc.png",
+    save_path=f"{result_type_dir}/plots/performance_plots_mcc",
     custom_colors=color_palette,
     plot_title="Model Performance: F1 and MCC Metrics",
     add_value_labels=True,
-    fig_width=14,
-    fig_height=8
+    fig_width=7.5,
+    fig_height=6,
+    plos_format=True
 )
 
 metrics_to_plot = [
     'adjusted_mcc',
     'cohen_kappa',
-    # 'adjusted_f1_score',
 ]
 # Replace the color palette with the specified colors
 color_palette = {
@@ -329,12 +334,13 @@ plot_performance_metrics_grouped(
     df_results=results_df_all,
     metrics=metrics_to_plot,
     model_order=top_k,
-    save_path=f"{result_type_dir}/plots/performance_plots_3metrics.png",
+    save_path=f"{result_type_dir}/plots/performance_plots_3metrics",
     custom_colors=color_palette,
     plot_title=None,
     add_value_labels=True,
-    fig_width=12,
-    fig_height=7
+    fig_width=7.5,
+    fig_height=6,
+    plos_format=True
 )
 
 results_df_all.to_csv("test.csv")
@@ -396,7 +402,8 @@ for reviewname in detailed_df_scr1.keys():
     plot_correlation_tiles(df_corr, criteria_mapping, model_name_corrections,
                            review_name=f"Review {i}: {reviewdata[2]}",
                            size_factor=3000,
-                           save_path=f"{result_type_dir}/plots/correlation_plot_{reviewname}.png")
+                           save_path=f"{result_type_dir}/plots/correlation_plot_{reviewname}",
+                           plos_format=True)
     i += 1
 
 # After your existing model processing code
@@ -413,12 +420,13 @@ results_dict = {
     'screening2': detailed_df_scr2  # This should contain {'I': df1, 'III': df3, ...}
 }
 
-# Create the plots
+# Create the plots with PLOS-compliant format
 create_side_by_side_kappa_plots(
     results_dict=results_dict,
     reviews=reviews,
     output_dir=output_dir,
-    subset_models=top_k  # Your list of top models
+    subset_models=top_k,  # Your list of top models
+    plos_format=True
 )
 
 
