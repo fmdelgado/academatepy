@@ -224,6 +224,26 @@ This project is licensed under the BSD 3-Clause License.
 - UI: [https://github.com/SimonSuewerUHH/academateUi](https://github.com/SimonSuewerUHH/academateUi)
 - Web tool: [https://apps.cosy.bio/academate](https://apps.cosy.bio/academate)
 
+## Data Availability
+
+All preprocessed validation data used in this study are available in this repository under the `validation/` directory:
+
+| Dataset | Description | Location |
+|---------|-------------|----------|
+| PICOS | Cost-effectiveness in musculoskeletal physiotherapy | `validation/PICOS/preprocessed_articles_filtered.pkl` and `.xlsx` |
+| Reproduction | Independent reproduction dataset (Rodriguez et al., 2024) | `validation/reproduction/preprocessed_articles_filtered.pkl` and `rodriguez_2024.xlsx` |
+
+**Contents of preprocessed data files:**
+- Article metadata (titles, abstracts, DOIs, publication details)
+- Human reviewer screening decisions (ground truth labels)
+- Inclusion/exclusion criteria assessments
+
+**Performance metrics and results:**
+- `validation/results/results/all_performance_metrics.csv` - Complete performance metrics for all models
+- `validation/results/results/Supplementary_Table_S3_Performance_Metrics.xlsx` - Supplementary tables
+- `validation/results/results/plots/` - Generated figures and analysis outputs
+
+**Note on full-text PDFs:** Due to copyright restrictions, full-text PDF files are not included in this repository. However, all articles can be obtained using the DOIs provided in the preprocessed data files. The preprocessing scripts and PDF download utilities are included to facilitate data reconstruction.
 
 ## Contact
 
