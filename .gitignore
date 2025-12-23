@@ -26,6 +26,35 @@
 
 # Draft/working files
 paper.md
+response2reviewers.md
+
+# Test files
+test.csv
+validation/test.csv
+
+# Generated results and embeddings (keep code, ignore outputs)
+validation/*/results/
+validation/reproduction/results/
+validation/reproduction/results_modular/
+app/test/tests/academate_results/
+
+# External tools (submodules/cloned repos)
+app/pdf_downloading_module/pyscihub/
+app/pdf_downloading_module/sci-dl/
+
+# Backup and checkpoint files
+*_backup.pkl
+*_checkpoint.pkl
+metadata_checkpoint.pkl
+
+# Temporary/intermediate data files
+validation/PICOS/home/
+validation/PICOS/solving_picos_df_issue/
+manual_update_needed.csv
+package-list.txt
+
+# Environment files
+environment.yml
 
 # Project-specific ignores
 /app/chatbot/
