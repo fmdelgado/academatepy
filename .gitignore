@@ -1,7 +1,35 @@
+# Environment and secrets
+.env
+
+# IDE and editor folders
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Python cache and bytecode
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# macOS system files
+**/.DS_Store
+.DS_Store
+
+# Log files
+*.log
+
+# Jupyter notebook checkpoints
+**/.ipynb_checkpoints/
+
+# Draft/working files
 paper.md
+
+# Project-specific ignores
 /app/chatbot/
 /app/test_vector_DBs/
-/app/chatbot/
 /test_results/
 /app/test/pdfs/
 /validation/PICOS/pdfs/.ipynb_checkpoints/10.1097_00007632-199210000-00016-checkpoint.pdf
