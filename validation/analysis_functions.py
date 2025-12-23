@@ -991,8 +991,9 @@ def process_review_repredicting(review, screening_type, criteria_threshold=None)
 
     if screening_type == 'screening2':
         og_df = og_df[og_df.screening1 == True].copy()
-
-
+        # Filter out records where PDF is irretrievable (for Review II)
+        if 'pdf_irretrievable' in og_df.columns:
+            og_df = og_df[og_df['pdf_irretrievable'] != True]
 
     # First, collect all the data
     total_records = len(og_df)

@@ -1,25 +1,25 @@
 Review,Review Name,Model,Screening Stage,TP,TN,FP,FN,Total,Positives (GT),Negatives (GT),Sensitivity,Specificity,PPV,NPV,FPR,FNR,Accuracy,F1-Score,MCC
 I,Physiotherapy,gemini-1.5-pro,Full-Text,53,57,41,16,167,69,98,0.768,0.582,0.564,0.781,0.418,0.232,0.659,0.65,0.347
-I,Physiotherapy,gemini-2.0-flash-lite,Full-Text,46,54,44,23,167,69,98,0.667,0.551,0.511,0.701,0.449,0.333,0.599,0.579,0.215
 I,Physiotherapy,gemini-2.0-flash,Full-Text,43,68,30,26,167,69,98,0.623,0.694,0.589,0.723,0.306,0.377,0.665,0.606,0.315
+I,Physiotherapy,gemini-2.0-flash-lite,Full-Text,46,54,44,23,167,69,98,0.667,0.551,0.511,0.701,0.449,0.333,0.599,0.579,0.215
+I,Physiotherapy,gpt-3.5-turbo-0125,Full-Text,22,74,24,47,167,69,98,0.319,0.755,0.478,0.612,0.245,0.681,0.575,0.383,0.082
 I,Physiotherapy,gpt-4o-2024-11-20,Full-Text,30,76,22,39,167,69,98,0.435,0.776,0.577,0.661,0.224,0.565,0.635,0.496,0.224
 I,Physiotherapy,gpt-4o-mini-2024-07-18,Full-Text,24,84,14,45,167,69,98,0.348,0.857,0.632,0.651,0.143,0.652,0.647,0.449,0.241
-I,Physiotherapy,gpt-3.5-turbo-0125,Full-Text,22,74,24,47,167,69,98,0.319,0.755,0.478,0.612,0.245,0.681,0.575,0.383,0.082
 I,Physiotherapy,gemini-1.5-pro,Title & Abstract,96,4115,214,76,4501,172,4329,0.558,0.951,0.31,0.982,0.049,0.442,0.936,0.398,0.385
-I,Physiotherapy,gemini-2.0-flash-lite,Title & Abstract,81,4026,303,91,4501,172,4329,0.471,0.93,0.211,0.978,0.07,0.529,0.912,0.291,0.275
 I,Physiotherapy,gemini-2.0-flash,Title & Abstract,69,4191,138,103,4501,172,4329,0.401,0.968,0.333,0.976,0.032,0.599,0.946,0.364,0.338
+I,Physiotherapy,gemini-2.0-flash-lite,Title & Abstract,81,4026,303,91,4501,172,4329,0.471,0.93,0.211,0.978,0.07,0.529,0.912,0.291,0.275
 I,Physiotherapy,gpt-3.5-turbo-0125,Title & Abstract,36,4104,221,136,4497,172,4325,0.209,0.949,0.14,0.968,0.051,0.791,0.921,0.168,0.131
 I,Physiotherapy,gpt-4o-2024-11-20,Title & Abstract,23,4301,28,149,4501,172,4329,0.134,0.994,0.451,0.967,0.006,0.866,0.961,0.206,0.23
 I,Physiotherapy,gpt-4o-mini-2024-07-18,Title & Abstract,21,4309,20,151,4501,172,4329,0.122,0.995,0.512,0.966,0.005,0.878,0.962,0.197,0.237
-II,Endometrial disorders,gemini-2.0-flash,Full-Text,132,35,32,16,215,148,67,0.892,0.522,0.805,0.686,0.478,0.108,0.777,0.846,0.451
-II,Endometrial disorders,gemini-2.0-flash-lite,Full-Text,131,34,32,17,214,148,66,0.885,0.515,0.804,0.667,0.485,0.115,0.771,0.842,0.434
-II,Endometrial disorders,gemini-1.5-pro,Full-Text,131,38,29,17,215,148,67,0.885,0.567,0.819,0.691,0.433,0.115,0.786,0.851,0.48
-II,Endometrial disorders,gpt-4o-2024-11-20,Full-Text,126,38,29,22,215,148,67,0.851,0.567,0.813,0.633,0.433,0.149,0.763,0.832,0.432
-II,Endometrial disorders,gpt-4o-mini-2024-07-18,Full-Text,122,37,30,26,215,148,67,0.824,0.552,0.803,0.587,0.448,0.176,0.74,0.813,0.383
-II,Endometrial disorders,gpt-3.5-turbo-0125,Full-Text,78,39,28,69,214,147,67,0.531,0.582,0.736,0.361,0.418,0.469,0.547,0.617,0.105
-II,Endometrial disorders,gemini-2.0-flash-lite,Title & Abstract,162,5246,92,66,5566,228,5338,0.711,0.983,0.638,0.988,0.017,0.289,0.972,0.672,0.658
-II,Endometrial disorders,gemini-2.0-flash,Title & Abstract,158,5276,62,70,5566,228,5338,0.693,0.988,0.718,0.987,0.012,0.307,0.976,0.705,0.693
-II,Endometrial disorders,gpt-4o-2024-11-20,Title & Abstract,156,5300,38,72,5566,228,5338,0.684,0.993,0.804,0.987,0.007,0.316,0.98,0.739,0.732
-II,Endometrial disorders,gpt-4o-mini-2024-07-18,Title & Abstract,147,5272,66,81,5566,228,5338,0.645,0.988,0.69,0.985,0.012,0.355,0.974,0.667,0.653
-II,Endometrial disorders,gemini-1.5-pro,Title & Abstract,133,5288,50,95,5566,228,5338,0.583,0.991,0.727,0.982,0.009,0.417,0.974,0.647,0.638
-II,Endometrial disorders,gpt-3.5-turbo-0125,Title & Abstract,111,5293,45,117,5566,228,5338,0.487,0.992,0.712,0.978,0.008,0.513,0.971,0.578,0.575
+II,Endometrial disorders,gemini-1.5-pro,Full-Text,131,38,24,17,210,148,62,0.885,0.613,0.845,0.691,0.387,0.115,0.805,0.865,0.517
+II,Endometrial disorders,gemini-2.0-flash,Full-Text,132,35,27,16,210,148,62,0.892,0.565,0.83,0.686,0.435,0.108,0.795,0.86,0.486
+II,Endometrial disorders,gemini-2.0-flash-lite,Full-Text,131,34,27,17,209,148,61,0.885,0.557,0.829,0.667,0.443,0.115,0.789,0.856,0.468
+II,Endometrial disorders,gpt-3.5-turbo-0125,Full-Text,78,38,24,69,209,147,62,0.531,0.613,0.765,0.355,0.387,0.469,0.555,0.627,0.131
+II,Endometrial disorders,gpt-4o-2024-11-20,Full-Text,126,38,24,22,210,148,62,0.851,0.613,0.84,0.633,0.387,0.149,0.781,0.846,0.469
+II,Endometrial disorders,gpt-4o-mini-2024-07-18,Full-Text,122,37,25,26,210,148,62,0.824,0.597,0.83,0.587,0.403,0.176,0.757,0.827,0.419
+II,Endometrial disorders,gemini-1.5-pro,Title & Abstract,133,4097,41,95,4366,228,4138,0.583,0.99,0.764,0.977,0.01,0.417,0.969,0.662,0.652
+II,Endometrial disorders,gemini-2.0-flash,Title & Abstract,158,4086,52,70,4366,228,4138,0.693,0.987,0.752,0.983,0.013,0.307,0.972,0.721,0.707
+II,Endometrial disorders,gemini-2.0-flash-lite,Title & Abstract,162,4062,76,66,4366,228,4138,0.711,0.982,0.681,0.984,0.018,0.289,0.967,0.695,0.678
+II,Endometrial disorders,gpt-3.5-turbo-0125,Title & Abstract,111,4098,40,117,4366,228,4138,0.487,0.99,0.735,0.972,0.01,0.513,0.964,0.586,0.581
+II,Endometrial disorders,gpt-4o-2024-11-20,Title & Abstract,156,4107,31,72,4366,228,4138,0.684,0.993,0.834,0.983,0.007,0.316,0.976,0.752,0.744
+II,Endometrial disorders,gpt-4o-mini-2024-07-18,Title & Abstract,147,4079,59,81,4366,228,4138,0.645,0.986,0.714,0.981,0.014,0.355,0.968,0.677,0.662
