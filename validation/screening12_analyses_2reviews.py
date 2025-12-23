@@ -401,7 +401,6 @@ for reviewname in detailed_df_scr1.keys():
 
     plot_correlation_tiles(df_corr, criteria_mapping, model_name_corrections,
                            review_name=f"Review {i}: {reviewdata[2]}",
-                           size_factor=3000,
                            save_path=f"{result_type_dir}/plots/correlation_plot_{reviewname}",
                            plos_format=True)
     i += 1

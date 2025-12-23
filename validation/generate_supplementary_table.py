@@ -1,7 +1,8 @@
 """
-Generate Supplementary Table S3: Comprehensive Performance Metrics
+Generate Supplementary Table S1: Comprehensive Performance Metrics
 This script creates a publication-ready supplementary table with all evaluation metrics
-including precision, recall, F1-score, and inter-rater reliability measures.
+including precision, recall, F1-score, sensitivity, specificity, PPV, NPV, and inter-rater
+reliability measures (MCC, Cohen's Kappa).
 """
 
 import os
@@ -114,9 +115,24 @@ def process_all_reviews():
 def create_summary_tables(df):
     """Create summary tables for the supplementary materials."""
 
+    # Filter to only include the models we want
+    df_filtered = df[df['model_name'].isin(MODEL_LIST)].copy()
+
+    # Add derived classification metrics (from S2)
+    df_filtered['sensitivity'] = df_filtered['recall']  # Same as recall
+    df_filtered['specificity'] = df_filtered['TN'] / (df_filtered['TN'] + df_filtered['FP'])
+    df_filtered['PPV'] = df_filtered['precision']  # Same as precision
+    df_filtered['NPV'] = df_filtered['TN'] / (df_filtered['TN'] + df_filtered['FN'])
+    df_filtered['FPR'] = df_filtered['FP'] / (df_filtered['FP'] + df_filtered['TN'])  # 1 - Specificity
+    df_filtered['FNR'] = df_filtered['FN'] / (df_filtered['FN'] + df_filtered['TP'])  # 1 - Sensitivity
+
+    # Handle division by zero
+    df_filtered = df_filtered.fillna(0)
+
     # Metrics to include in the table
     metrics_detail = ['TP', 'TN', 'FP', 'FN', 'precision', 'recall', 'f1_score',
-                      'mcc', 'cohen_kappa', 'analysis_coverage']
+                      'mcc', 'cohen_kappa', 'sensitivity', 'specificity', 'PPV', 'NPV',
+                      'FPR', 'FNR', 'analysis_coverage']
 
     metrics_adjusted = ['adjusted_precision', 'adjusted_recall', 'adjusted_f1_score',
                         'adjusted_mcc', 'adjusted_cohen_kappa']
@@ -124,9 +140,6 @@ def create_summary_tables(df):
     # Table 1: Detailed metrics by model, review, and screening type
     detail_cols = ['model_name', 'reviewname', 'review_description', 'screening_type',
                    'total_records', 'analyzed_records', 'missing_records'] + metrics_detail + metrics_adjusted
-
-    # Filter to only include the models we want
-    df_filtered = df[df['model_name'].isin(MODEL_LIST)].copy()
 
     # Create detailed table
     detail_table = df_filtered[detail_cols].copy()
@@ -181,7 +194,7 @@ def create_styled_excel(detail_table, summary_table, screening_summary, output_p
 
     # === Sheet 1: Detailed Results ===
     ws1 = wb.active
-    ws1.title = "S3a_Detailed_Metrics"
+    ws1.title = "S1a_Detailed_Metrics"
 
     # Rename columns for publication
     column_rename = {
@@ -197,10 +210,16 @@ def create_styled_excel(detail_table, summary_table, screening_summary, output_p
         'FP': 'False Positives',
         'FN': 'False Negatives',
         'precision': 'Precision',
-        'recall': 'Recall (Sensitivity)',
+        'recall': 'Recall',
         'f1_score': 'F1-Score',
         'mcc': 'MCC',
         'cohen_kappa': "Cohen's Kappa",
+        'sensitivity': 'Sensitivity',
+        'specificity': 'Specificity',
+        'PPV': 'PPV',
+        'NPV': 'NPV',
+        'FPR': 'FPR',
+        'FNR': 'FNR',
         'analysis_coverage': 'Analysis Coverage',
         'adjusted_precision': 'Adj. Precision',
         'adjusted_recall': 'Adj. Recall',
@@ -236,7 +255,7 @@ def create_styled_excel(detail_table, summary_table, screening_summary, output_p
     ws1.column_dimensions['C'].width = 20  # Review topic
 
     # === Sheet 2: Summary by Model ===
-    ws2 = wb.create_sheet("S3b_Model_Summary")
+    ws2 = wb.create_sheet("S1b_Model_Summary")
 
     summary_renamed = summary_table.rename(columns={
         'precision': 'Mean Precision',
@@ -283,7 +302,7 @@ def create_styled_excel(detail_table, summary_table, screening_summary, output_p
         ws2.column_dimensions[get_column_letter(col_idx)].width = 18
 
     # === Sheet 3: Summary by Screening Type ===
-    ws3 = wb.create_sheet("S3c_Screening_Summary")
+    ws3 = wb.create_sheet("S1c_Screening_Summary")
 
     screening_renamed = screening_summary.rename(columns={
         'screening_type': 'Screening Phase',
@@ -333,7 +352,13 @@ def create_styled_excel(detail_table, summary_table, screening_summary, output_p
         ("False Positives (FP)", "Articles incorrectly classified as included", "Lower is better"),
         ("False Negatives (FN)", "Articles incorrectly classified as excluded (missed)", "Lower is better - critical for systematic reviews"),
         ("Precision", "TP / (TP + FP) - Positive predictive value", "Proportion of predicted inclusions that are correct"),
-        ("Recall (Sensitivity)", "TP / (TP + FN) - True positive rate", "Proportion of actual inclusions correctly identified"),
+        ("Recall", "TP / (TP + FN) - True positive rate", "Proportion of actual inclusions correctly identified"),
+        ("Sensitivity", "TP / (TP + FN) - Same as Recall", "True Positive Rate - proportion of positives correctly identified"),
+        ("Specificity", "TN / (TN + FP) - True negative rate", "Proportion of negatives correctly identified"),
+        ("PPV", "TP / (TP + FP) - Positive Predictive Value", "Same as Precision - probability that positive prediction is correct"),
+        ("NPV", "TN / (TN + FN) - Negative Predictive Value", "Probability that negative prediction is correct"),
+        ("FPR", "FP / (FP + TN) - False Positive Rate", "1 - Specificity; proportion of negatives incorrectly classified as positive"),
+        ("FNR", "FN / (FN + TP) - False Negative Rate", "1 - Sensitivity; proportion of positives incorrectly classified as negative"),
         ("F1-Score", "Harmonic mean of precision and recall", "Balanced measure of precision and recall"),
         ("MCC", "Matthews Correlation Coefficient", "Balanced measure for imbalanced datasets (-1 to 1)"),
         ("Cohen's Kappa", "Inter-rater reliability accounting for chance", "≤0: no agreement, 0.01-0.20: slight, 0.21-0.40: fair, 0.41-0.60: moderate, 0.61-0.80: substantial, 0.81-1.00: almost perfect"),
@@ -453,16 +478,15 @@ if __name__ == "__main__":
     # Create summary tables
     detail_table, summary_table, screening_summary = create_summary_tables(combined_results)
 
-    # Save raw data
-    combined_results.to_pickle(f"{output_dir}/all_performance_metrics.pkl")
+    # Save raw data (CSV only, no pickle)
     combined_results.to_csv(f"{output_dir}/all_performance_metrics.csv", index=False)
 
     # Create styled Excel
-    excel_path = f"{output_dir}/Supplementary_Table_S3_Performance_Metrics.xlsx"
+    excel_path = f"{output_dir}/Supplementary_Table_S1_Performance_Metrics.xlsx"
     create_styled_excel(detail_table, summary_table, screening_summary, excel_path)
 
     # Generate LaTeX table
-    latex_path = f"{output_dir}/table_s3_latex.tex"
+    latex_path = f"{output_dir}/table_s1_latex.tex"
     generate_latex_table(summary_table, latex_path)
 
     # Print summary statistics

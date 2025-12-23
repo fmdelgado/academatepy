@@ -29,6 +29,8 @@ def save_figure_plos(fig, save_path, dpi=300, format='tiff'):
     - TIFF: Flattened, no alpha, LZW compression
     - Fonts: Arial, Times, Symbol (8-12pt)
 
+    Saves PNG at ORIGINAL size first, then scales for TIFF if needed.
+
     Parameters:
     -----------
     fig : matplotlib.figure.Figure
@@ -47,8 +49,25 @@ def save_figure_plos(fig, save_path, dpi=300, format='tiff'):
     # Ensure DPI is within PLOS acceptable range
     dpi = max(300, min(600, dpi))
 
-    # Get figure size in inches and check dimensions
+    # Get figure size in inches
     fig_width_in, fig_height_in = fig.get_size_inches()
+
+    # Determine output path and format
+    base_path = os.path.splitext(save_path)[0]
+
+    # Save PNG at ORIGINAL size first (matching old behavior)
+    png_path = base_path + '.png'
+    fig.savefig(
+        png_path,
+        format='png',
+        dpi=dpi,
+        bbox_inches='tight',
+        pad_inches=0.1,
+        facecolor='white'
+    )
+    print(f"PNG saved at original size: {png_path}")
+
+    # Now check if we need to scale for PLOS TIFF format
     width_px = fig_width_in * dpi
     height_px = fig_height_in * dpi
 
@@ -62,10 +81,7 @@ def save_figure_plos(fig, save_path, dpi=300, format='tiff'):
         scale_h = max_height_px / height_px
         scale = min(scale_w, scale_h)
         fig.set_size_inches(fig_width_in * scale, fig_height_in * scale)
-        print(f"Figure scaled to fit PLOS dimensions: {fig_width_in * scale:.2f}\" x {fig_height_in * scale:.2f}\"")
-
-    # Determine output path and format
-    base_path = os.path.splitext(save_path)[0]
+        print(f"Figure scaled for PLOS TIFF: {fig_width_in * scale:.2f}\" x {fig_height_in * scale:.2f}\"")
 
     if format.lower() == 'eps':
         output_path = base_path + '.eps'
@@ -124,17 +140,6 @@ def save_figure_plos(fig, save_path, dpi=300, format='tiff'):
 
         png_buffer.close()
         print(f"Figure saved as TIFF (LZW): {output_path}")
-
-    # Also save PNG version for reference
-    png_path = base_path + '.png'
-    fig.savefig(
-        png_path,
-        format='png',
-        dpi=dpi,
-        bbox_inches='tight',
-        pad_inches=0.1,
-        facecolor='white'
-    )
 
     return output_path
 
@@ -767,23 +772,26 @@ def plot_performance_metrics_grouped(
 
 def plot_correlation_tiles(
     df_corr, criteria_mapping, model_name_corrections,
-    review_name=None, size_factor=3000, save_path=None,
+    review_name=None, size_factor=1500, save_path=None,
     custom_cmap=None, add_annotations=True,
     fig_width=None, fig_height=None, plos_format=True
 ):
     """
     Plots a bubble-tile plot showing correlation values for each model and criterion.
     """
-    # Set up enhanced plotting style
+    # Set up plotting style with PLOS-compliant font sizes
+    # Title/subtitle: 11pt bold, everything else: 9pt normal weight
     plt.rcParams.update({
         'font.family': 'Arial',
-        'font.size': 12,
-        'axes.labelsize': 12,
-        'axes.titlesize': 12,
+        'font.size': 9,
+        'font.weight': 'normal',
+        'axes.labelsize': 9,
+        'axes.titlesize': 11,
+        'axes.titleweight': 'bold',
         'xtick.labelsize': 9,
         'ytick.labelsize': 9,
         'legend.fontsize': 9,
-        'figure.titlesize': 12,
+        'figure.titlesize': 11,
         'axes.grid': False,
         'axes.facecolor': '#ffffff',
         'figure.facecolor': '#ffffff',
@@ -818,15 +826,17 @@ def plot_correlation_tiles(
     if fig_width and fig_height:
         fig_size = (fig_width, fig_height)
     else:
-        fig_size = (6 * len(screenings), 0.5 * len(model_order) + 3)
+        # Fixed dimensions: PLOS max width (7.5"), shorter height (4.5")
+        fig_size = (7.5, 4.5)
     
     fig, axes = plt.subplots(
-        1, len(screenings), 
-        figsize=fig_size, 
+        1, len(screenings),
+        figsize=fig_size,
         sharey=True,
-        constrained_layout=True,
         facecolor='#ffffff'
     )
+    # Use tight_layout like the old version
+    plt.tight_layout()
     
     if len(screenings) == 1:
         axes = [axes]  # Make axes iterable if there's only one subplot
@@ -848,9 +858,9 @@ def plot_correlation_tiles(
         x_labels = pivot_df.columns.tolist()
         y_labels = pivot_df.index.tolist()
         
-        # Set up the axes
+        # Set up the axes (font size 9, no bold)
         ax.set_xticks(np.arange(len(x_labels)))
-        ax.set_xticklabels(x_labels, rotation=45, ha='right', fontsize=9, fontweight='bold')
+        ax.set_xticklabels(x_labels, rotation=45, ha='right', fontsize=9)
         ax.set_yticks(np.arange(len(y_labels)))
         ax.set_yticklabels([model_name_corrections.get(m, m) for m in y_labels], fontsize=9)
         
@@ -893,43 +903,43 @@ def plot_correlation_tiles(
                 if add_annotations:
                     # Choose text color based on bubble color brightness
                     text_color = 'black' if color_val > 0.4 else 'white'
-                    
+
                     ax.text(
-                        xi, yi, 
-                        f"{corr:.2f}", 
-                        ha='center', 
-                        va='center', 
-                        fontsize=9,  # Minimum font size
+                        xi, yi,
+                        f"{corr:.2f}",
+                        ha='center',
+                        va='center',
+                        fontsize=9,
                         fontweight='normal',
-                        color=text_color, 
+                        color=text_color,
                         zorder=3
                     )
         
-        # Set title for each screening panel with improved styling
+        # Set title for each screening panel (subtitle - fontsize 11)
         screening_titles = {
             'screening1': 'Title & Abstract Screening',
             'screening2': 'Full-Text Screening'
         }
         ax.set_title(
-            screening_titles.get(screening, screening), 
-            fontsize=14, 
-            fontweight='bold', 
-            pad=15
+            screening_titles.get(screening, screening),
+            fontsize=11,
+            fontweight='bold',
+            pad=10
         )
         
         # Set axis limits
         ax.set_xlim(-0.5, len(x_labels) - 0.5)
         ax.set_ylim(len(y_labels) - 0.5, -0.5)  # Invert y-axis
     
-    # Add a main title if provided
+    # Add a main title if provided (fontsize 11)
     if review_name:
         # Replace MCC with all caps if present
         review_name = review_name.replace('Mcc', 'MCC')
         fig.suptitle(
-            review_name, 
-            fontsize=16, 
-            fontweight='bold', 
-            y=1.05
+            review_name,
+            fontsize=11,
+            fontweight='bold',
+            y=0.98
         )
         
 
@@ -941,8 +951,8 @@ def plot_correlation_tiles(
     # cbar = fig.colorbar(sm, cax=cbar_ax, orientation='horizontal')
     # cbar.set_label('Correlation Strength', fontsize=9, fontweight='bold')
     
-    # Adjust layout to make room for the legend at the bottom
-    plt.subplots_adjust(bottom=0.15)
+    # Keep tight layout from before
+    plt.tight_layout()
 
     # Save the figure if a path is provided
     if save_path:
