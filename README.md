@@ -144,7 +144,7 @@ response = screening.chat("What are the main outcomes reported in studies using 
 
 Academate has been evaluated on multiple systematic reviews across different domains, showing substantial agreement with human reviewers. Key findings from our evaluation:
 
-- **LLM Performance**: Gemini models consistently demonstrated the highest performance, with gemini-1.5-pro achieving the highest mean adjusted Matthews Correlation Coefficient (0.453) and Cohen's Kappa (0.452)
+- **LLM Performance**: Gemini models consistently demonstrated the highest performance, with gemini-1.5-pro achieving the highest mean adjusted Matthews Correlation Coefficient (0.472) and Cohen's Kappa (0.462), averaged across both reviews and both screening stages
 - **Screening Stages**: Performance was generally higher in title/abstract screening compared to full-text screening
 - **Domain Variation**: Performance varied across research domains, suggesting that certain fields may present unique challenges
 
@@ -213,6 +213,8 @@ Contributions are welcome! Please follow these steps:
 
 This project is licensed under the BSD 3-Clause License.
 
+*A formal `LICENSE` file is pending confirmation of the institutional rights holder — Academate was developed at Cosy.Bio, University of Hamburg — which is why GitHub currently reports no license for this repository.*
+
 **License Terms:**
 - Free for academic and non-profit use under the BSD 3-Clause License (https://opensource.org/license/BSD-3-Clause)
 - Commercial users must contact the Cosy.Bio laboratory at University of Hamburg (https://cosy.bio) to obtain a commercial license
@@ -240,7 +242,7 @@ All preprocessed validation data used in this study are available in this reposi
 
 **Performance metrics and results:**
 - `validation/results/results/all_performance_metrics.csv` - Complete performance metrics for all models
-- `validation/results/results/Supplementary_Table_S3_Performance_Metrics.xlsx` - Supplementary tables
+- `validation/results/results/table_s3_latex.tex` - Supplementary Table S3, formatted for LaTeX
 - `validation/results/results/plots/` - Generated figures and analysis outputs
 
 **Note on full-text PDFs:** Due to copyright restrictions, full-text PDF files are not included in this repository. However, all articles can be obtained using the DOIs provided in the preprocessed data files. The preprocessing scripts and PDF download utilities are included to facilitate data reconstruction.
